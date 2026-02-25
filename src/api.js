@@ -18,6 +18,7 @@ export const api = {
   getProgram: (id) => request(`/programs/${id}`),
   generateProgram: (id) => request(`/programs/${id}/generate`, { method: 'POST' }),
   completeProgram: (id) => request(`/programs/${id}/complete`, { method: 'POST' }),
+  updateWeightLog: (id, weightLog) => request(`/programs/${id}/weight-log`, { method: 'PUT', body: JSON.stringify({ weight_log: weightLog }) }),
   createCheckout: (productType) => request('/stripe/create-checkout', { method: 'POST', body: JSON.stringify({ product_type: productType }) }),
   guestCheckout: (productType, email) => request('/stripe/guest-checkout', { method: 'POST', body: JSON.stringify({ product_type: productType, email }) }),
   guestCheckoutWithProfile: (productType, email, profile) => request('/stripe/guest-checkout', { method: 'POST', body: JSON.stringify({ product_type: productType, email, profile }) }),
