@@ -21,16 +21,7 @@ export default function Home() {
   const { user } = useAuth()
 
   const handleBuy = (productId) => {
-    if (user) {
-      // Create Stripe checkout
-      import('../api').then(({ api }) => {
-        api.createCheckout(productId).then(data => {
-          window.location.href = data.checkout_url
-        }).catch(err => alert(err.message))
-      })
-    } else {
-      nav('/login')
-    }
+    nav(`/onboarding?product=${productId}`)
   }
 
   return (
