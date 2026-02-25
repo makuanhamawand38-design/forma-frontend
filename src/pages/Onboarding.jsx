@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { api } from '../api'
-import { Zap, Chv, productIcon } from '../components/Icons'
+import { Zap, productIcon } from '../components/Icons'
 
 const PRODUCTS = {
   training: { name: "4 Veckors Träningsprogram", price: 349, weeks: 4 },
@@ -11,10 +11,10 @@ const PRODUCTS = {
 }
 
 const GOALS = [
-  { id: "muscle", label: "Bygga muskler", desc: "Öka muskelmassa och styrka" },
-  { id: "weight_loss", label: "Gå ner i vikt", desc: "Bränna fett och bli smalare" },
-  { id: "endurance", label: "Uthållighet", desc: "Förbättra kondition och energi" },
-  { id: "health", label: "Allmän hälsa", desc: "Må bättre och bli starkare" },
+  { id: "muscle", label: "Bygga muskler", desc: "Öka muskelmassa och styrka", icon: "💪" },
+  { id: "weight_loss", label: "Gå ner i vikt", desc: "Bränna fett och bli smalare", icon: "🔥" },
+  { id: "endurance", label: "Uthållighet", desc: "Förbättra kondition och energi", icon: "🏃" },
+  { id: "health", label: "Allmän hälsa", desc: "Må bättre och bli starkare", icon: "❤️" },
 ]
 
 const EXPERIENCE = [
@@ -29,6 +29,14 @@ const EQUIPMENT = [
   { id: "minimal", label: "Minimal", desc: "Endast kroppsvikt" },
 ]
 
+const DIET_TYPES = [
+  { id: "none", label: "Inga restriktioner", desc: "Jag äter allt" },
+  { id: "vegetarian", label: "Vegetarian", desc: "Ingen kött eller fisk" },
+  { id: "vegan", label: "Vegan", desc: "Helt växtbaserat" },
+  { id: "lactose_free", label: "Laktosfri", desc: "Undviker mjölkprodukter" },
+  { id: "gluten_free", label: "Glutenfri", desc: "Undviker gluten" },
+]
+
 export default function Onboarding() {
   const nav = useNavigate()
   const location = useLocation()
@@ -38,6 +46,8 @@ export default function Onboarding() {
   const productId = params.get('product') || 'training'
   const product = PRODUCTS[productId] || PRODUCTS.training
   const isGuest = !user
+  const isNutrition = productId === 'nutrition' || productId === 'bundle'
+  const isTraining = productId === 'training' || productId === 'bundle'
 
   const [gender, setGender] = useState('man')
   const [age, setAge] = useState('')
@@ -47,44 +57,45 @@ export default function Onboarding() {
   const [experience, setExperience] = useState('')
   const [trainingDays, setTrainingDays] = useState(4)
   const [equipment, setEquipment] = useState('gym')
+  const [injuries, setInjuries] = useState('')
+  const [avoidExercises, setAvoidExercises] = useState('')
+  const [dietType, setDietType] = useState('none')
+  const [allergies, setAllergies] = useState('')
+  const [preferences, setPreferences] = useState('')
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
   const [step, setStep] = useState(1)
 
-  const canProceedStep1 = gender && age && weight && height
-  const canProceedStep2 = goal && experience && equipment
-  const canPay = isGuest ? (canProceedStep2 && email) : canProceedStep2
+  const canStep1 = gender && age && weight && height
+  const canStep2 = goal && experience && equipment
+  const canPay = isGuest ? (canStep2 && email) : canStep2
+
+  const profileData = {
+    gender,
+    age: parseInt(age),
+    current_weight: parseFloat(weight),
+    height: parseFloat(height),
+    goal,
+    experience,
+    training_days: trainingDays,
+    equipment,
+    injuries: injuries || null,
+    avoid_exercises: avoidExercises || null,
+    diet_type: dietType,
+    allergies: allergies || null,
+    preferences: preferences || null,
+  }
 
   const handleCheckout = async () => {
     if (!canPay) return
     setLoading(true)
     try {
-      // Save profile data first (if logged in)
       if (user) {
-        await api.updateProfile({
-          gender,
-          age: parseInt(age),
-          current_weight: parseFloat(weight),
-          height: parseFloat(height),
-          goal,
-          experience,
-          training_days: trainingDays,
-          equipment,
-        })
+        await api.updateProfile(profileData)
         const data = await api.createCheckout(productId)
         window.location.href = data.checkout_url
       } else {
-        // Guest checkout - store profile in metadata via backend
-        const data = await api.guestCheckoutWithProfile(productId, email, {
-          gender,
-          age: parseInt(age),
-          current_weight: parseFloat(weight),
-          height: parseFloat(height),
-          goal,
-          experience,
-          training_days: trainingDays,
-          equipment,
-        })
+        const data = await api.guestCheckoutWithProfile(productId, email, profileData)
         window.location.href = data.checkout_url
       }
     } catch (err) {
@@ -92,6 +103,19 @@ export default function Onboarding() {
     }
     setLoading(false)
   }
+
+  const SelectCard = ({ selected, onClick, label, desc, icon, small }) => (
+    <button onClick={onClick} style={{
+      padding: small ? '14px 8px' : '16px 12px', borderRadius: 12, cursor: 'pointer', fontFamily: 'var(--f)', textAlign: 'center',
+      background: selected ? 'rgba(255,69,0,0.15)' : 'var(--b)',
+      border: selected ? '2px solid var(--a)' : '1px solid var(--br)',
+      color: 'var(--t)', transition: 'all 0.2s',
+    }}>
+      {icon && <div style={{ fontSize: 24, marginBottom: 6 }}>{icon}</div>}
+      <div style={{ fontWeight: 600, fontSize: small ? 13 : 14, marginBottom: desc ? 4 : 0 }}>{label}</div>
+      {desc && <div style={{ fontSize: small ? 11 : 12, color: selected ? 'var(--a)' : 'var(--ts)', lineHeight: 1.3 }}>{desc}</div>}
+    </button>
+  )
 
   return (
     <div className="auth-page">
@@ -104,8 +128,8 @@ export default function Onboarding() {
           </div>
         </div>
 
-        {/* Back button */}
-        <button onClick={() => step === 1 ? nav(-1) : setStep(1)} style={{ background: 'none', border: 'none', color: 'var(--ts)', cursor: 'pointer', fontFamily: 'var(--f)', fontSize: 14, display: 'flex', alignItems: 'center', gap: 6, marginBottom: 16, padding: 0 }}>
+        {/* Back */}
+        <button onClick={() => step === 1 ? nav(-1) : setStep(step - 1)} style={{ background: 'none', border: 'none', color: 'var(--ts)', cursor: 'pointer', fontFamily: 'var(--f)', fontSize: 14, display: 'flex', alignItems: 'center', gap: 6, marginBottom: 16, padding: 0 }}>
           ← Tillbaka
         </button>
 
@@ -118,19 +142,21 @@ export default function Onboarding() {
           <button onClick={() => nav('/')} style={{ background: 'none', border: 'none', color: 'var(--ts)', cursor: 'pointer', fontSize: 13, fontFamily: 'var(--f)' }}>Ändra</button>
         </div>
 
-        {/* Progress */}
+        {/* Progress bar */}
         <div style={{ display: 'flex', gap: 8, marginBottom: 32 }}>
           <div style={{ flex: 1, height: 4, borderRadius: 2, background: 'var(--a)' }} />
           <div style={{ flex: 1, height: 4, borderRadius: 2, background: step >= 2 ? 'var(--a)' : 'var(--br)' }} />
+          <div style={{ flex: 1, height: 4, borderRadius: 2, background: step >= 3 ? 'var(--a)' : 'var(--br)' }} />
         </div>
 
         <div className="auth-box" style={{ maxWidth: 560 }}>
-          {step === 1 ? (
+
+          {/* ========== STEG 1: Personlig info ========== */}
+          {step === 1 && (
             <>
               <h1 className="auth-title" style={{ fontSize: 22 }}>Anpassa ditt program</h1>
-              <p className="auth-sub">Berätta om dig så skapar vi det perfekta programmet</p>
+              <p className="auth-sub">Steg 1 av 3 — Berätta om dig</p>
 
-              {/* Dina uppgifter */}
               <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid var(--br)', borderRadius: 12, padding: 20, marginBottom: 24 }}>
                 <h3 style={{ fontSize: 16, fontWeight: 600, color: 'var(--t)', marginBottom: 16 }}>Dina uppgifter</h3>
 
@@ -170,29 +196,24 @@ export default function Onboarding() {
                 </div>
               </div>
 
-              <button className="auth-btn" onClick={() => canProceedStep1 && setStep(2)} disabled={!canProceedStep1} style={{ opacity: canProceedStep1 ? 1 : 0.5 }}>
+              <button className="auth-btn" onClick={() => canStep1 && setStep(2)} disabled={!canStep1} style={{ opacity: canStep1 ? 1 : 0.5 }}>
                 Fortsätt <span style={{ marginLeft: 4 }}>→</span>
               </button>
             </>
-          ) : (
+          )}
+
+          {/* ========== STEG 2: Träningsmål ========== */}
+          {step === 2 && (
             <>
               <h1 className="auth-title" style={{ fontSize: 22 }}>Dina träningsmål</h1>
-              <p className="auth-sub">Steg 2 av 2 — vi är nästan klara!</p>
+              <p className="auth-sub">Steg 2 av 3 — Mål och erfarenhet</p>
 
               {/* Mål */}
               <div style={{ marginBottom: 24 }}>
                 <label style={{ fontSize: 14, fontWeight: 600, color: 'var(--t)', marginBottom: 12, display: 'block' }}>Vad är ditt mål?</label>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                   {GOALS.map(g => (
-                    <button key={g.id} onClick={() => setGoal(g.id)} style={{
-                      padding: '16px 12px', borderRadius: 12, cursor: 'pointer', fontFamily: 'var(--f)', textAlign: 'left',
-                      background: goal === g.id ? 'rgba(255,69,0,0.15)' : 'var(--b)',
-                      border: goal === g.id ? '2px solid var(--a)' : '1px solid var(--br)',
-                      color: 'var(--t)',
-                    }}>
-                      <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 4 }}>{g.label}</div>
-                      <div style={{ fontSize: 12, color: goal === g.id ? 'var(--a)' : 'var(--ts)', lineHeight: 1.3 }}>{g.desc}</div>
-                    </button>
+                    <SelectCard key={g.id} selected={goal === g.id} onClick={() => setGoal(g.id)} label={g.label} desc={g.desc} icon={g.icon} />
                   ))}
                 </div>
               </div>
@@ -202,15 +223,7 @@ export default function Onboarding() {
                 <label style={{ fontSize: 14, fontWeight: 600, color: 'var(--t)', marginBottom: 12, display: 'block' }}>Din erfarenhetsnivå</label>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
                   {EXPERIENCE.map(e => (
-                    <button key={e.id} onClick={() => setExperience(e.id)} style={{
-                      padding: '16px 8px', borderRadius: 12, cursor: 'pointer', fontFamily: 'var(--f)', textAlign: 'center',
-                      background: experience === e.id ? 'rgba(255,69,0,0.15)' : 'var(--b)',
-                      border: experience === e.id ? '2px solid var(--a)' : '1px solid var(--br)',
-                      color: 'var(--t)',
-                    }}>
-                      <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 4 }}>{e.label}</div>
-                      <div style={{ fontSize: 11, color: experience === e.id ? 'var(--a)' : 'var(--ts)', lineHeight: 1.3 }}>{e.desc}</div>
-                    </button>
+                    <SelectCard key={e.id} selected={experience === e.id} onClick={() => setExperience(e.id)} label={e.label} desc={e.desc} small />
                   ))}
                 </div>
               </div>
@@ -228,32 +241,99 @@ export default function Onboarding() {
               </div>
 
               {/* Utrustning */}
-              <div style={{ marginBottom: 24 }}>
-                <label style={{ fontSize: 14, fontWeight: 600, color: 'var(--t)', marginBottom: 12, display: 'block' }}>Utrustning</label>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
-                  {EQUIPMENT.map(e => (
-                    <button key={e.id} onClick={() => setEquipment(e.id)} style={{
-                      padding: '16px 8px', borderRadius: 12, cursor: 'pointer', fontFamily: 'var(--f)', textAlign: 'center',
-                      background: equipment === e.id ? 'rgba(255,69,0,0.15)' : 'var(--b)',
-                      border: equipment === e.id ? '2px solid var(--a)' : '1px solid var(--br)',
-                      color: 'var(--t)',
-                    }}>
-                      <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 4 }}>{e.label}</div>
-                      <div style={{ fontSize: 11, color: equipment === e.id ? 'var(--a)' : 'var(--ts)', lineHeight: 1.3 }}>{e.desc}</div>
-                    </button>
-                  ))}
+              {isTraining && (
+                <div style={{ marginBottom: 24 }}>
+                  <label style={{ fontSize: 14, fontWeight: 600, color: 'var(--t)', marginBottom: 12, display: 'block' }}>Utrustning</label>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
+                    {EQUIPMENT.map(e => (
+                      <SelectCard key={e.id} selected={equipment === e.id} onClick={() => setEquipment(e.id)} label={e.label} desc={e.desc} small />
+                    ))}
+                  </div>
                 </div>
+              )}
+
+              <button className="auth-btn" onClick={() => canStep2 && setStep(3)} disabled={!canStep2} style={{ opacity: canStep2 ? 1 : 0.5 }}>
+                Fortsätt <span style={{ marginLeft: 4 }}>→</span>
+              </button>
+            </>
+          )}
+
+          {/* ========== STEG 3: Anpassningar & Betalning ========== */}
+          {step === 3 && (
+            <>
+              <h1 className="auth-title" style={{ fontSize: 22 }}>Sista anpassningar</h1>
+              <p className="auth-sub">Steg 3 av 3 — Nästan klart!</p>
+
+              {/* Skador / begränsningar */}
+              {isTraining && (
+                <div style={{ marginBottom: 20 }}>
+                  <label style={{ fontSize: 14, fontWeight: 600, color: 'var(--t)', marginBottom: 8, display: 'block' }}>Har du några skador eller begränsningar?</label>
+                  <p style={{ fontSize: 12, color: 'var(--ts)', marginBottom: 8 }}>T.ex. "Ont i knät", "Skadad axel" — lämna tomt om nej</p>
+                  <textarea className="auth-input" placeholder="Beskriv eventuella skador..." value={injuries} onChange={e => setInjuries(e.target.value)}
+                    style={{ margin: 0, minHeight: 70, resize: 'vertical', fontFamily: 'var(--f)' }} />
+                </div>
+              )}
+
+              {/* Övningar att undvika */}
+              {isTraining && (
+                <div style={{ marginBottom: 20 }}>
+                  <label style={{ fontSize: 14, fontWeight: 600, color: 'var(--t)', marginBottom: 8, display: 'block' }}>Övningar du vill undvika?</label>
+                  <p style={{ fontSize: 12, color: 'var(--ts)', marginBottom: 8 }}>T.ex. "Marklyft", "Burpees" — lämna tomt om inga</p>
+                  <textarea className="auth-input" placeholder="Övningar att undvika..." value={avoidExercises} onChange={e => setAvoidExercises(e.target.value)}
+                    style={{ margin: 0, minHeight: 70, resize: 'vertical', fontFamily: 'var(--f)' }} />
+                </div>
+              )}
+
+              {/* Kost-preferenser */}
+              {isNutrition && (
+                <>
+                  <div style={{ marginBottom: 20 }}>
+                    <label style={{ fontSize: 14, fontWeight: 600, color: 'var(--t)', marginBottom: 12, display: 'block' }}>Kostrestriktioner</label>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                      {DIET_TYPES.map(d => (
+                        <SelectCard key={d.id} selected={dietType === d.id} onClick={() => setDietType(d.id)} label={d.label} desc={d.desc} small />
+                      ))}
+                    </div>
+                  </div>
+
+                  <div style={{ marginBottom: 20 }}>
+                    <label style={{ fontSize: 14, fontWeight: 600, color: 'var(--t)', marginBottom: 8, display: 'block' }}>Allergier eller matintoleranser?</label>
+                    <textarea className="auth-input" placeholder="T.ex. nötter, skaldjur, ägg..." value={allergies} onChange={e => setAllergies(e.target.value)}
+                      style={{ margin: 0, minHeight: 60, resize: 'vertical', fontFamily: 'var(--f)' }} />
+                  </div>
+                </>
+              )}
+
+              {/* Övrigt */}
+              <div style={{ marginBottom: 24 }}>
+                <label style={{ fontSize: 14, fontWeight: 600, color: 'var(--t)', marginBottom: 8, display: 'block' }}>Övriga önskemål</label>
+                <p style={{ fontSize: 12, color: 'var(--ts)', marginBottom: 8 }}>Något annat vi bör veta? T.ex. "Jag jobbar natt", "Vill träna på morgonen"</p>
+                <textarea className="auth-input" placeholder="Valfritt..." value={preferences} onChange={e => setPreferences(e.target.value)}
+                  style={{ margin: 0, minHeight: 60, resize: 'vertical', fontFamily: 'var(--f)' }} />
               </div>
 
               {/* E-post för gäster */}
               {isGuest && (
-                <div style={{ marginBottom: 24 }}>
+                <div style={{ marginBottom: 20 }}>
                   <label style={{ fontSize: 14, fontWeight: 600, color: 'var(--t)', marginBottom: 8, display: 'block' }}>E-post för leverans</label>
                   <input type="email" className="auth-input" placeholder="din@email.com" value={email} onChange={e => setEmail(e.target.value)} style={{ margin: 0 }} />
                 </div>
               )}
 
-              {/* Klarna badge */}
+              {/* Sammanfattning */}
+              <div style={{ background: 'rgba(255,69,0,0.05)', border: '1px solid rgba(255,69,0,0.15)', borderRadius: 12, padding: 16, marginBottom: 20 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--a)', marginBottom: 8 }}>Din profil</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4, fontSize: 13, color: 'var(--ts)' }}>
+                  <span>{gender === 'man' ? '👤 Man' : '👤 Kvinna'}, {age} år</span>
+                  <span>⚖️ {weight} kg, {height} cm</span>
+                  <span>🎯 {GOALS.find(g => g.id === goal)?.label}</span>
+                  <span>📊 {EXPERIENCE.find(e => e.id === experience)?.label}</span>
+                  <span>📅 {trainingDays} dagar/vecka</span>
+                  <span>🏋️ {EQUIPMENT.find(e => e.id === equipment)?.label}</span>
+                </div>
+              </div>
+
+              {/* Klarna */}
               <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
                 <span className="klarna-badge">Klarna.</span>
                 <span style={{ fontSize: 12, color: 'var(--td)', display: 'flex', alignItems: 'center' }}>Betala med kort eller Klarna</span>
@@ -264,7 +344,7 @@ export default function Onboarding() {
               </button>
 
               <p style={{ textAlign: 'center', marginTop: 12, fontSize: 13, color: 'var(--td)' }}>
-                Säker betalning via Stripe. Direkt leverans efter köp.
+                Säker betalning via Stripe. Ditt program genereras direkt.
               </p>
             </>
           )}
@@ -272,7 +352,7 @@ export default function Onboarding() {
 
         {/* Login link for guests */}
         {isGuest && (
-          <div style={{ textAlign: 'center', marginTop: 16 }}>
+          <div style={{ textAlign: 'center', marginTop: 16, marginBottom: 32 }}>
             <span style={{ fontSize: 13, color: 'var(--td)' }}>Har du konto? </span>
             <a onClick={() => nav('/login')} style={{ fontSize: 13, color: 'var(--a)', cursor: 'pointer' }}>Logga in</a>
           </div>
