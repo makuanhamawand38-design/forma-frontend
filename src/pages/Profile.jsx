@@ -4,51 +4,324 @@ import { api } from '../api'
 import Nav from '../components/Nav'
 import { Zap } from '../components/Icons'
 
+const GOALS = [
+  { id: "muscle", label: "Bygga muskler" },
+  { id: "weight_loss", label: "Gå ner i vikt" },
+  { id: "endurance", label: "Uthållighet" },
+  { id: "health", label: "Allmän hälsa" },
+]
+
+const EXPERIENCE = [
+  { id: "beginner", label: "Nybörjare" },
+  { id: "intermediate", label: "Mellan" },
+  { id: "advanced", label: "Avancerad" },
+]
+
+const EQUIPMENT = [
+  { id: "gym", label: "Gym" },
+  { id: "home", label: "Hemma" },
+  { id: "minimal", label: "Minimal" },
+]
+
+const DIET_TYPES = [
+  { id: "none", label: "Inga restriktioner" },
+  { id: "vegetarian", label: "Vegetarian" },
+  { id: "vegan", label: "Vegan" },
+  { id: "lactose_free", label: "Laktosfri" },
+  { id: "gluten_free", label: "Glutenfri" },
+]
+
+const PRODUCT_NAMES = {
+  training: "Träningsprogram",
+  nutrition: "Kostschema",
+  bundle: "Kombipaket",
+}
+
 export default function Profile() {
   const { user } = useAuth()
   const [profile, setProfile] = useState(null)
-  const [weight, setWeight] = useState('')
+  const [orders, setOrders] = useState([])
+  const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+
+  // Editable fields
+  const [gender, setGender] = useState('')
+  const [age, setAge] = useState('')
+  const [weight, setWeight] = useState('')
+  const [height, setHeight] = useState('')
+  const [goal, setGoal] = useState('')
+  const [experience, setExperience] = useState('')
+  const [trainingDays, setTrainingDays] = useState(4)
+  const [equipment, setEquipment] = useState('')
+  const [injuries, setInjuries] = useState('')
+  const [avoidExercises, setAvoidExercises] = useState('')
+  const [dietType, setDietType] = useState('none')
+  const [allergies, setAllergies] = useState('')
+  const [preferences, setPreferences] = useState('')
 
   useEffect(() => {
-    api.getProfile().then(p => { setProfile(p); setWeight(p.current_weight || '') }).catch(() => {})
+    api.getProfile().then(p => {
+      setProfile(p)
+      setGender(p.gender || '')
+      setAge(p.age || '')
+      setWeight(p.current_weight || '')
+      setHeight(p.height || '')
+      setGoal(p.goal || '')
+      setExperience(p.experience || '')
+      setTrainingDays(p.training_days || 4)
+      setEquipment(p.equipment || '')
+      setInjuries(p.injuries || '')
+      setAvoidExercises(p.avoid_exercises || '')
+      setDietType(p.diet_type || 'none')
+      setAllergies(p.allergies || '')
+      setPreferences(p.preferences || '')
+    }).catch(() => {})
+    api.getOrders().then(setOrders).catch(() => {})
   }, [])
 
   const save = async () => {
     setSaving(true)
+    setSaved(false)
     try {
-      await api.updateProfile({ current_weight: parseFloat(weight) })
-      alert('Profil uppdaterad!')
+      const data = {
+        gender: gender || undefined,
+        age: age ? parseInt(age) : undefined,
+        current_weight: weight ? parseFloat(weight) : undefined,
+        height: height ? parseFloat(height) : undefined,
+        goal: goal || undefined,
+        experience: experience || undefined,
+        training_days: trainingDays || undefined,
+        equipment: equipment || undefined,
+        injuries: injuries || undefined,
+        avoid_exercises: avoidExercises || undefined,
+        diet_type: dietType || undefined,
+        allergies: allergies || undefined,
+        preferences: preferences || undefined,
+      }
+      // Remove undefined values
+      Object.keys(data).forEach(k => data[k] === undefined && delete data[k])
+      await api.updateProfile(data)
+      setSaved(true)
+      setEditing(false)
+      setTimeout(() => setSaved(false), 3000)
     } catch (err) { alert(err.message) }
     setSaving(false)
   }
+
+  const SelectBtn = ({ selected, onClick, label }) => (
+    <button onClick={onClick} disabled={!editing} style={{
+      padding: '10px 14px', borderRadius: 10, cursor: editing ? 'pointer' : 'default', fontFamily: 'var(--f)', fontSize: 13, fontWeight: 500,
+      background: selected ? 'rgba(255,69,0,0.15)' : 'var(--b)',
+      border: selected ? '2px solid var(--a)' : '1px solid var(--br)',
+      color: selected ? 'var(--a)' : 'var(--t)',
+      opacity: editing ? 1 : 0.8,
+      transition: 'all 0.2s',
+    }}>
+      {label}
+    </button>
+  )
 
   return (
     <div>
       <Nav />
       <div className="dash-main">
-        <h1 className="dash-title">Mitt Konto</h1>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+          <h1 className="dash-title" style={{ margin: 0 }}>Mitt Konto</h1>
+          {profile && !editing && (
+            <button onClick={() => setEditing(true)} style={{
+              padding: '10px 20px', borderRadius: 10, cursor: 'pointer', fontFamily: 'var(--f)', fontSize: 14, fontWeight: 600,
+              background: 'rgba(255,69,0,0.1)', border: '1px solid rgba(255,69,0,0.2)', color: 'var(--a)',
+            }}>
+              ✏️ Redigera profil
+            </button>
+          )}
+        </div>
+
+        {/* Sparat-meddelande */}
+        {saved && (
+          <div style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 12, padding: 16, marginBottom: 24, display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ fontSize: 20 }}>✅</span>
+            <span style={{ color: '#22c55e', fontWeight: 600 }}>Profil uppdaterad!</span>
+          </div>
+        )}
+
         {profile ? (
           <div className="profile-grid">
-            <div className="profile-card">
-              <h3>Personlig info</h3>
-              <div className="profile-field"><div className="profile-label">E-post</div><div className="profile-val">{profile.email}</div></div>
-              <div className="profile-field"><div className="profile-label">Kön</div><div className="profile-val">{profile.gender || 'Ej angivet'}</div></div>
-              <div className="profile-field"><div className="profile-label">Ålder</div><div className="profile-val">{profile.age || 'Ej angivet'}</div></div>
-              <div className="profile-field"><div className="profile-label">Längd</div><div className="profile-val">{profile.height ? `${profile.height} cm` : 'Ej angivet'}</div></div>
-              <div className="profile-field"><div className="profile-label">Nuvarande vikt</div><input type="number" className="profile-input" value={weight} onChange={e => setWeight(e.target.value)} /></div>
-              <button className="auth-btn" onClick={save} disabled={saving}>{saving ? <span className="spinner" /> : 'Spara ändringar'}</button>
-            </div>
+            {/* Vänster kolumn */}
             <div>
+              {/* Personlig info */}
+              <div className="profile-card" style={{ marginBottom: 24 }}>
+                <h3>Personlig info</h3>
+
+                <div className="profile-field">
+                  <div className="profile-label">E-post</div>
+                  <div className="profile-val">{profile.email}</div>
+                </div>
+
+                <div className="profile-field">
+                  <div className="profile-label">Kön</div>
+                  {editing ? (
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <SelectBtn selected={gender === 'man'} onClick={() => setGender('man')} label="Man" />
+                      <SelectBtn selected={gender === 'kvinna'} onClick={() => setGender('kvinna')} label="Kvinna" />
+                    </div>
+                  ) : (
+                    <div className="profile-val">{gender === 'man' ? 'Man' : gender === 'kvinna' ? 'Kvinna' : 'Ej angivet'}</div>
+                  )}
+                </div>
+
+                <div className="profile-field">
+                  <div className="profile-label">Ålder</div>
+                  {editing ? (
+                    <input type="number" className="profile-input" value={age} onChange={e => setAge(e.target.value)} placeholder="25" />
+                  ) : (
+                    <div className="profile-val">{age ? `${age} år` : 'Ej angivet'}</div>
+                  )}
+                </div>
+
+                <div className="profile-field">
+                  <div className="profile-label">Längd</div>
+                  {editing ? (
+                    <input type="number" className="profile-input" value={height} onChange={e => setHeight(e.target.value)} placeholder="175" />
+                  ) : (
+                    <div className="profile-val">{height ? `${height} cm` : 'Ej angivet'}</div>
+                  )}
+                </div>
+
+                <div className="profile-field">
+                  <div className="profile-label">Nuvarande vikt</div>
+                  {editing ? (
+                    <input type="number" className="profile-input" value={weight} onChange={e => setWeight(e.target.value)} placeholder="75" />
+                  ) : (
+                    <div className="profile-val">{weight ? `${weight} kg` : 'Ej angivet'}</div>
+                  )}
+                </div>
+              </div>
+
+              {/* Kost & Hälsa */}
+              <div className="profile-card">
+                <h3>Kost & Hälsa</h3>
+
+                <div className="profile-field">
+                  <div className="profile-label">Kostrestriktioner</div>
+                  {editing ? (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                      {DIET_TYPES.map(d => (
+                        <SelectBtn key={d.id} selected={dietType === d.id} onClick={() => setDietType(d.id)} label={d.label} />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="profile-val">{DIET_TYPES.find(d => d.id === dietType)?.label || 'Ej angivet'}</div>
+                  )}
+                </div>
+
+                <div className="profile-field">
+                  <div className="profile-label">Allergier</div>
+                  {editing ? (
+                    <textarea className="profile-input" value={allergies} onChange={e => setAllergies(e.target.value)} placeholder="T.ex. nötter, skaldjur, ägg..."
+                      style={{ minHeight: 50, resize: 'vertical', fontFamily: 'var(--f)' }} />
+                  ) : (
+                    <div className="profile-val">{allergies || 'Inga'}</div>
+                  )}
+                </div>
+
+                <div className="profile-field">
+                  <div className="profile-label">Skador / begränsningar</div>
+                  {editing ? (
+                    <textarea className="profile-input" value={injuries} onChange={e => setInjuries(e.target.value)} placeholder="T.ex. ont i knät, skadad axel..."
+                      style={{ minHeight: 50, resize: 'vertical', fontFamily: 'var(--f)' }} />
+                  ) : (
+                    <div className="profile-val">{injuries || 'Inga'}</div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Höger kolumn */}
+            <div>
+              {/* Träningsprofil */}
               <div className="profile-card" style={{ marginBottom: 24 }}>
                 <h3>Träningsprofil</h3>
-                <div className="profile-field"><div className="profile-label">Mål</div><div className="profile-val">{profile.goal || 'Ej angivet'}</div></div>
-                <div className="profile-field"><div className="profile-label">Erfarenhet</div><div className="profile-val">{profile.experience || 'Ej angivet'}</div></div>
-                <div className="profile-field"><div className="profile-label">Träningsdagar</div><div className="profile-val">{profile.training_days ? `${profile.training_days} dagar/vecka` : 'Ej angivet'}</div></div>
-                <div className="profile-field"><div className="profile-label">Utrustning</div><div className="profile-val">{profile.equipment || 'Ej angivet'}</div></div>
+
+                <div className="profile-field">
+                  <div className="profile-label">Mål</div>
+                  {editing ? (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                      {GOALS.map(g => (
+                        <SelectBtn key={g.id} selected={goal === g.id} onClick={() => setGoal(g.id)} label={g.label} />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="profile-val">{GOALS.find(g => g.id === goal)?.label || 'Ej angivet'}</div>
+                  )}
+                </div>
+
+                <div className="profile-field">
+                  <div className="profile-label">Erfarenhet</div>
+                  {editing ? (
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      {EXPERIENCE.map(e => (
+                        <SelectBtn key={e.id} selected={experience === e.id} onClick={() => setExperience(e.id)} label={e.label} />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="profile-val">{EXPERIENCE.find(e => e.id === experience)?.label || 'Ej angivet'}</div>
+                  )}
+                </div>
+
+                <div className="profile-field">
+                  <div className="profile-label">Träningsdagar per vecka</div>
+                  {editing ? (
+                    <div>
+                      <input type="range" min="2" max="7" value={trainingDays} onChange={e => setTrainingDays(parseInt(e.target.value))}
+                        style={{ width: '100%', accentColor: 'var(--a)' }} />
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--td)' }}>
+                        <span>2 dagar</span><span style={{ color: 'var(--a)', fontWeight: 600 }}>{trainingDays} dagar</span><span>7 dagar</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="profile-val">{trainingDays ? `${trainingDays} dagar/vecka` : 'Ej angivet'}</div>
+                  )}
+                </div>
+
+                <div className="profile-field">
+                  <div className="profile-label">Utrustning</div>
+                  {editing ? (
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      {EQUIPMENT.map(e => (
+                        <SelectBtn key={e.id} selected={equipment === e.id} onClick={() => setEquipment(e.id)} label={e.label} />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="profile-val">{EQUIPMENT.find(e => e.id === equipment)?.label || 'Ej angivet'}</div>
+                  )}
+                </div>
+
+                <div className="profile-field">
+                  <div className="profile-label">Övningar att undvika</div>
+                  {editing ? (
+                    <textarea className="profile-input" value={avoidExercises} onChange={e => setAvoidExercises(e.target.value)} placeholder="T.ex. marklyft, burpees..."
+                      style={{ minHeight: 50, resize: 'vertical', fontFamily: 'var(--f)' }} />
+                  ) : (
+                    <div className="profile-val">{avoidExercises || 'Inga'}</div>
+                  )}
+                </div>
+
+                <div className="profile-field">
+                  <div className="profile-label">Övriga önskemål</div>
+                  {editing ? (
+                    <textarea className="profile-input" value={preferences} onChange={e => setPreferences(e.target.value)} placeholder="T.ex. vill träna på morgonen..."
+                      style={{ minHeight: 50, resize: 'vertical', fontFamily: 'var(--f)' }} />
+                  ) : (
+                    <div className="profile-val">{preferences || 'Inga'}</div>
+                  )}
+                </div>
               </div>
+
+              {/* Rabatt */}
               {profile.has_discount && (
-                <div className="profile-card">
+                <div className="profile-card" style={{ marginBottom: 24 }}>
                   <h3>Rabattstatus</h3>
                   <div style={{ background: 'rgba(255,69,0,0.1)', border: '1px solid rgba(255,69,0,0.2)', borderRadius: 12, padding: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
                     <Zap size={24} />
@@ -56,10 +329,46 @@ export default function Profile() {
                   </div>
                 </div>
               )}
+
+              {/* Orderhistorik */}
+              {orders.length > 0 && (
+                <div className="profile-card">
+                  <h3>Orderhistorik</h3>
+                  {orders.map((o, i) => (
+                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', borderBottom: i < orders.length - 1 ? '1px solid var(--br)' : 'none' }}>
+                      <div>
+                        <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--t)' }}>{PRODUCT_NAMES[o.product_type] || o.product_type}</div>
+                        <div style={{ fontSize: 12, color: 'var(--td)' }}>{new Date(o.created_at).toLocaleDateString('sv-SE')}</div>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <span style={{ fontWeight: 600, color: 'var(--t)' }}>{o.amount_sek} SEK</span>
+                        <span style={{ fontSize: 11, padding: '4px 8px', borderRadius: 6, background: o.payment_status === 'paid' ? 'rgba(34,197,94,0.1)' : 'rgba(255,69,0,0.1)', color: o.payment_status === 'paid' ? '#22c55e' : 'var(--a)' }}>
+                          {o.payment_status === 'paid' ? 'Betald' : o.payment_status}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         ) : (
           <div style={{ textAlign: 'center', padding: 48 }}><span className="spinner" style={{ width: 32, height: 32 }} /></div>
+        )}
+
+        {/* Spara/Avbryt knappar */}
+        {editing && (
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginTop: 32, paddingBottom: 48 }}>
+            <button onClick={() => setEditing(false)} style={{
+              padding: '12px 32px', borderRadius: 10, cursor: 'pointer', fontFamily: 'var(--f)', fontSize: 14, fontWeight: 600,
+              background: 'var(--b)', border: '1px solid var(--br)', color: 'var(--ts)',
+            }}>
+              Avbryt
+            </button>
+            <button className="auth-btn" onClick={save} disabled={saving} style={{ maxWidth: 240 }}>
+              {saving ? <span className="spinner" /> : '💾 Spara ändringar'}
+            </button>
+          </div>
         )}
       </div>
     </div>
