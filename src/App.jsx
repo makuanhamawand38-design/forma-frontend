@@ -5,6 +5,8 @@ import Login from './pages/Login'
 import Register from './pages/Register'
 import Guest from './pages/Guest'
 import Onboarding from './pages/Onboarding'
+import ForgotPassword from './pages/ForgotPassword'
+import ResetPassword from './pages/ResetPassword'
 import Dashboard from './pages/Dashboard'
 import ProgramView from './pages/ProgramView'
 import Profile from './pages/Profile'
@@ -22,6 +24,8 @@ export default function App() {
       <Route path="/register" element={<Register />} />
       <Route path="/guest" element={<Guest />} />
       <Route path="/onboarding" element={<Onboarding />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
       <Route path="/program/:id" element={<ProtectedRoute><ProgramView /></ProtectedRoute>} />
       <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />

@@ -43,6 +43,9 @@ export default function Login() {
           <form onSubmit={handleSubmit}>
             <div className="auth-field"><label className="auth-label">E-postadress</label><input type="email" className="auth-input" placeholder="din@email.com" value={email} onChange={e => setEmail(e.target.value)} required /></div>
             <div className="auth-field"><label className="auth-label">Lösenord</label><input type="password" className="auth-input" placeholder="••••••••" value={pw} onChange={e => setPw(e.target.value)} required /></div>
+            <div style={{ textAlign: 'right', marginTop: -8, marginBottom: 16 }}>
+              <Link to="/forgot-password" style={{ fontSize: 13, color: 'var(--a)' }}>Glömt lösenord?</Link>
+            </div>
             <button className="auth-btn" type="submit" disabled={loading}>{loading ? <span className="spinner" /> : 'Logga in'}</button>
           </form>
           <div className="auth-link">Har du inget konto? <Link to="/register">Skapa konto</Link></div>

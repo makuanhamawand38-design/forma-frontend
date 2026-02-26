@@ -45,7 +45,8 @@ export default function Profile() {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
 
-  // Editable fields
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
   const [gender, setGender] = useState('')
   const [age, setAge] = useState('')
   const [weight, setWeight] = useState('')
@@ -63,6 +64,8 @@ export default function Profile() {
   useEffect(() => {
     api.getProfile().then(p => {
       setProfile(p)
+      setFirstName(p.first_name || '')
+      setLastName(p.last_name || '')
       setGender(p.gender || '')
       setAge(p.age || '')
       setWeight(p.current_weight || '')
@@ -85,6 +88,8 @@ export default function Profile() {
     setSaved(false)
     try {
       const data = {
+        first_name: firstName || undefined,
+        last_name: lastName || undefined,
         gender: gender || undefined,
         age: age ? parseInt(age) : undefined,
         current_weight: weight ? parseFloat(weight) : undefined,
@@ -99,7 +104,6 @@ export default function Profile() {
         allergies: allergies || undefined,
         preferences: preferences || undefined,
       }
-      // Remove undefined values
       Object.keys(data).forEach(k => data[k] === undefined && delete data[k])
       await api.updateProfile(data)
       setSaved(true)
@@ -115,8 +119,7 @@ export default function Profile() {
       background: selected ? 'rgba(255,69,0,0.15)' : 'var(--b)',
       border: selected ? '2px solid var(--a)' : '1px solid var(--br)',
       color: selected ? 'var(--a)' : 'var(--t)',
-      opacity: editing ? 1 : 0.8,
-      transition: 'all 0.2s',
+      opacity: editing ? 1 : 0.8, transition: 'all 0.2s',
     }}>
       {label}
     </button>
@@ -138,7 +141,6 @@ export default function Profile() {
           )}
         </div>
 
-        {/* Sparat-meddelande */}
         {saved && (
           <div style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 12, padding: 16, marginBottom: 24, display: 'flex', alignItems: 'center', gap: 10 }}>
             <span style={{ fontSize: 20 }}>✅</span>
@@ -148,11 +150,28 @@ export default function Profile() {
 
         {profile ? (
           <div className="profile-grid">
-            {/* Vänster kolumn */}
             <div>
-              {/* Personlig info */}
               <div className="profile-card" style={{ marginBottom: 24 }}>
                 <h3>Personlig info</h3>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  <div className="profile-field">
+                    <div className="profile-label">Förnamn</div>
+                    {editing ? (
+                      <input type="text" className="profile-input" value={firstName} onChange={e => setFirstName(e.target.value)} placeholder="Johan" />
+                    ) : (
+                      <div className="profile-val">{firstName || 'Ej angivet'}</div>
+                    )}
+                  </div>
+                  <div className="profile-field">
+                    <div className="profile-label">Efternamn</div>
+                    {editing ? (
+                      <input type="text" className="profile-input" value={lastName} onChange={e => setLastName(e.target.value)} placeholder="Andersson" />
+                    ) : (
+                      <div className="profile-val">{lastName || 'Ej angivet'}</div>
+                    )}
+                  </div>
+                </div>
 
                 <div className="profile-field">
                   <div className="profile-label">E-post</div>
@@ -199,7 +218,6 @@ export default function Profile() {
                 </div>
               </div>
 
-              {/* Kost & Hälsa */}
               <div className="profile-card">
                 <h3>Kost & Hälsa</h3>
 
@@ -238,9 +256,7 @@ export default function Profile() {
               </div>
             </div>
 
-            {/* Höger kolumn */}
             <div>
-              {/* Träningsprofil */}
               <div className="profile-card" style={{ marginBottom: 24 }}>
                 <h3>Träningsprofil</h3>
 
@@ -319,7 +335,6 @@ export default function Profile() {
                 </div>
               </div>
 
-              {/* Rabatt */}
               {profile.has_discount && (
                 <div className="profile-card" style={{ marginBottom: 24 }}>
                   <h3>Rabattstatus</h3>
@@ -330,7 +345,6 @@ export default function Profile() {
                 </div>
               )}
 
-              {/* Orderhistorik */}
               {orders.length > 0 && (
                 <div className="profile-card">
                   <h3>Orderhistorik</h3>
@@ -356,7 +370,6 @@ export default function Profile() {
           <div style={{ textAlign: 'center', padding: 48 }}><span className="spinner" style={{ width: 32, height: 32 }} /></div>
         )}
 
-        {/* Spara/Avbryt knappar */}
         {editing && (
           <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginTop: 32, paddingBottom: 48 }}>
             <button onClick={() => setEditing(false)} style={{

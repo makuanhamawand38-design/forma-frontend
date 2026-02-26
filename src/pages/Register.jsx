@@ -5,6 +5,8 @@ import { api } from '../api'
 import { Zap, User } from '../components/Icons'
 
 export default function Register() {
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
   const [email, setEmail] = useState('')
   const [pw, setPw] = useState('')
   const [pw2, setPw2] = useState('')
@@ -16,11 +18,12 @@ export default function Register() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
+    if (!firstName.trim() || !lastName.trim()) { setError('Ange för- och efternamn'); return }
     if (pw !== pw2) { setError('Lösenorden matchar inte'); return }
     if (pw.length < 8) { setError('Lösenordet måste vara minst 8 tecken'); return }
     setLoading(true)
     try {
-      const data = await api.register(email, pw)
+      const data = await api.register(email, pw, firstName.trim(), lastName.trim())
       login(data.token, data.email)
       nav('/dashboard')
     } catch (err) {
@@ -44,6 +47,10 @@ export default function Register() {
           <p className="auth-sub">Registrera dig för att komma igång med FORMA</p>
           {error && <div className="auth-error">{error}</div>}
           <form onSubmit={handleSubmit}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <div className="auth-field"><label className="auth-label">Förnamn</label><input type="text" className="auth-input" placeholder="Johan" value={firstName} onChange={e => setFirstName(e.target.value)} required /></div>
+              <div className="auth-field"><label className="auth-label">Efternamn</label><input type="text" className="auth-input" placeholder="Andersson" value={lastName} onChange={e => setLastName(e.target.value)} required /></div>
+            </div>
             <div className="auth-field"><label className="auth-label">E-postadress</label><input type="email" className="auth-input" placeholder="din@email.com" value={email} onChange={e => setEmail(e.target.value)} required /></div>
             <div className="auth-field"><label className="auth-label">Lösenord</label><input type="password" className="auth-input" placeholder="Minst 8 tecken" value={pw} onChange={e => setPw(e.target.value)} required /></div>
             <div className="auth-field"><label className="auth-label">Bekräfta lösenord</label><input type="password" className="auth-input" placeholder="Upprepa lösenord" value={pw2} onChange={e => setPw2(e.target.value)} required /></div>
