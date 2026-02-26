@@ -45,7 +45,6 @@ export default function Onboarding() {
   const params = new URLSearchParams(location.search)
   const productId = params.get('product') || 'training'
   const product = PRODUCTS[productId] || PRODUCTS.training
-  const isGuest = !user
   const isNutrition = productId === 'nutrition' || productId === 'bundle'
   const isTraining = productId === 'training' || productId === 'bundle'
 
@@ -65,10 +64,12 @@ export default function Onboarding() {
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
   const [step, setStep] = useState(1)
+  const [guestMode, setGuestMode] = useState(false)
 
   const canStep1 = gender && age && weight && height
   const canStep2 = goal && experience && equipment
-  const canPay = isGuest ? (canStep2 && email) : canStep2
+  const canPayLoggedIn = canStep2
+  const canPayGuest = canStep2 && email
 
   const profileData = {
     gender,
@@ -87,7 +88,6 @@ export default function Onboarding() {
   }
 
   const handleCheckout = async () => {
-    if (!canPay) return
     setLoading(true)
     try {
       if (user) {
@@ -117,6 +117,10 @@ export default function Onboarding() {
     </button>
   )
 
+  // Determine total steps: 4 if not logged in (extra account step), 3 if logged in
+  const totalSteps = user ? 3 : 4
+  const progressStep = step
+
   return (
     <div className="auth-page">
       <div style={{ width: '100%', maxWidth: 560, padding: '0 16px' }}>
@@ -129,7 +133,12 @@ export default function Onboarding() {
         </div>
 
         {/* Back */}
-        <button onClick={() => step === 1 ? nav(-1) : setStep(step - 1)} style={{ background: 'none', border: 'none', color: 'var(--ts)', cursor: 'pointer', fontFamily: 'var(--f)', fontSize: 14, display: 'flex', alignItems: 'center', gap: 6, marginBottom: 16, padding: 0 }}>
+        <button onClick={() => {
+          if (step === 1) nav(-1)
+          else if (step === 4 && !guestMode) setStep(3)
+          else if (step === 4 && guestMode) { setGuestMode(false); setStep(3) }
+          else setStep(step - 1)
+        }} style={{ background: 'none', border: 'none', color: 'var(--ts)', cursor: 'pointer', fontFamily: 'var(--f)', fontSize: 14, display: 'flex', alignItems: 'center', gap: 6, marginBottom: 16, padding: 0 }}>
           ← Tillbaka
         </button>
 
@@ -144,9 +153,9 @@ export default function Onboarding() {
 
         {/* Progress bar */}
         <div style={{ display: 'flex', gap: 8, marginBottom: 32 }}>
-          <div style={{ flex: 1, height: 4, borderRadius: 2, background: 'var(--a)' }} />
-          <div style={{ flex: 1, height: 4, borderRadius: 2, background: step >= 2 ? 'var(--a)' : 'var(--br)' }} />
-          <div style={{ flex: 1, height: 4, borderRadius: 2, background: step >= 3 ? 'var(--a)' : 'var(--br)' }} />
+          {Array.from({ length: totalSteps }).map((_, i) => (
+            <div key={i} style={{ flex: 1, height: 4, borderRadius: 2, background: progressStep >= i + 1 ? 'var(--a)' : 'var(--br)' }} />
+          ))}
         </div>
 
         <div className="auth-box" style={{ maxWidth: 560 }}>
@@ -155,12 +164,11 @@ export default function Onboarding() {
           {step === 1 && (
             <>
               <h1 className="auth-title" style={{ fontSize: 22 }}>Anpassa ditt program</h1>
-              <p className="auth-sub">Steg 1 av 3 — Berätta om dig</p>
+              <p className="auth-sub">Steg 1 av {totalSteps} — Berätta om dig</p>
 
               <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid var(--br)', borderRadius: 12, padding: 20, marginBottom: 24 }}>
                 <h3 style={{ fontSize: 16, fontWeight: 600, color: 'var(--t)', marginBottom: 16 }}>Dina uppgifter</h3>
 
-                {/* Kön */}
                 <div style={{ marginBottom: 16 }}>
                   <label style={{ fontSize: 13, color: 'var(--ts)', marginBottom: 8, display: 'block' }}>Kön</label>
                   <div style={{ display: 'flex', gap: 10 }}>
@@ -177,7 +185,6 @@ export default function Onboarding() {
                   </div>
                 </div>
 
-                {/* Ålder & Vikt */}
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
                   <div>
                     <label style={{ fontSize: 13, color: 'var(--ts)', marginBottom: 6, display: 'block' }}>Ålder</label>
@@ -189,7 +196,6 @@ export default function Onboarding() {
                   </div>
                 </div>
 
-                {/* Längd */}
                 <div>
                   <label style={{ fontSize: 13, color: 'var(--ts)', marginBottom: 6, display: 'block' }}>Längd (cm)</label>
                   <input type="number" className="auth-input" placeholder="175" value={height} onChange={e => setHeight(e.target.value)} style={{ margin: 0 }} />
@@ -206,9 +212,8 @@ export default function Onboarding() {
           {step === 2 && (
             <>
               <h1 className="auth-title" style={{ fontSize: 22 }}>Dina träningsmål</h1>
-              <p className="auth-sub">Steg 2 av 3 — Mål och erfarenhet</p>
+              <p className="auth-sub">Steg 2 av {totalSteps} — Mål och erfarenhet</p>
 
-              {/* Mål */}
               <div style={{ marginBottom: 24 }}>
                 <label style={{ fontSize: 14, fontWeight: 600, color: 'var(--t)', marginBottom: 12, display: 'block' }}>Vad är ditt mål?</label>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
@@ -218,7 +223,6 @@ export default function Onboarding() {
                 </div>
               </div>
 
-              {/* Erfarenhet */}
               <div style={{ marginBottom: 24 }}>
                 <label style={{ fontSize: 14, fontWeight: 600, color: 'var(--t)', marginBottom: 12, display: 'block' }}>Din erfarenhetsnivå</label>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
@@ -228,7 +232,6 @@ export default function Onboarding() {
                 </div>
               </div>
 
-              {/* Träningsdagar */}
               <div style={{ marginBottom: 24 }}>
                 <label style={{ fontSize: 14, fontWeight: 600, color: 'var(--t)', marginBottom: 12, display: 'block' }}>
                   Träningsdagar per vecka: <span style={{ color: 'var(--a)' }}>{trainingDays}</span>
@@ -240,7 +243,6 @@ export default function Onboarding() {
                 </div>
               </div>
 
-              {/* Utrustning */}
               {isTraining && (
                 <div style={{ marginBottom: 24 }}>
                   <label style={{ fontSize: 14, fontWeight: 600, color: 'var(--t)', marginBottom: 12, display: 'block' }}>Utrustning</label>
@@ -258,13 +260,12 @@ export default function Onboarding() {
             </>
           )}
 
-          {/* ========== STEG 3: Anpassningar & Betalning ========== */}
+          {/* ========== STEG 3: Anpassningar ========== */}
           {step === 3 && (
             <>
               <h1 className="auth-title" style={{ fontSize: 22 }}>Sista anpassningar</h1>
-              <p className="auth-sub">Steg 3 av 3 — Nästan klart!</p>
+              <p className="auth-sub">Steg 3 av {totalSteps} — Nästan klart!</p>
 
-              {/* Skador / begränsningar */}
               {isTraining && (
                 <div style={{ marginBottom: 20 }}>
                   <label style={{ fontSize: 14, fontWeight: 600, color: 'var(--t)', marginBottom: 8, display: 'block' }}>Har du några skador eller begränsningar?</label>
@@ -274,7 +275,6 @@ export default function Onboarding() {
                 </div>
               )}
 
-              {/* Övningar att undvika */}
               {isTraining && (
                 <div style={{ marginBottom: 20 }}>
                   <label style={{ fontSize: 14, fontWeight: 600, color: 'var(--t)', marginBottom: 8, display: 'block' }}>Övningar du vill undvika?</label>
@@ -284,7 +284,6 @@ export default function Onboarding() {
                 </div>
               )}
 
-              {/* Kost-preferenser */}
               {isNutrition && (
                 <>
                   <div style={{ marginBottom: 20 }}>
@@ -295,7 +294,6 @@ export default function Onboarding() {
                       ))}
                     </div>
                   </div>
-
                   <div style={{ marginBottom: 20 }}>
                     <label style={{ fontSize: 14, fontWeight: 600, color: 'var(--t)', marginBottom: 8, display: 'block' }}>Allergier eller matintoleranser?</label>
                     <textarea className="auth-input" placeholder="T.ex. nötter, skaldjur, ägg..." value={allergies} onChange={e => setAllergies(e.target.value)}
@@ -304,7 +302,6 @@ export default function Onboarding() {
                 </>
               )}
 
-              {/* Övrigt */}
               <div style={{ marginBottom: 24 }}>
                 <label style={{ fontSize: 14, fontWeight: 600, color: 'var(--t)', marginBottom: 8, display: 'block' }}>Övriga önskemål</label>
                 <p style={{ fontSize: 12, color: 'var(--ts)', marginBottom: 8 }}>Något annat vi bör veta? T.ex. "Jag jobbar natt", "Vill träna på morgonen"</p>
@@ -312,51 +309,123 @@ export default function Onboarding() {
                   style={{ margin: 0, minHeight: 60, resize: 'vertical', fontFamily: 'var(--f)' }} />
               </div>
 
-              {/* E-post för gäster */}
-              {isGuest && (
-                <div style={{ marginBottom: 20 }}>
-                  <label style={{ fontSize: 14, fontWeight: 600, color: 'var(--t)', marginBottom: 8, display: 'block' }}>E-post för leverans</label>
-                  <input type="email" className="auth-input" placeholder="din@email.com" value={email} onChange={e => setEmail(e.target.value)} style={{ margin: 0 }} />
-                </div>
+              {/* If logged in: go straight to payment summary */}
+              {user ? (
+                <>
+                  {/* Sammanfattning */}
+                  <div style={{ background: 'rgba(255,69,0,0.05)', border: '1px solid rgba(255,69,0,0.15)', borderRadius: 12, padding: 16, marginBottom: 20 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--a)', marginBottom: 8 }}>Din profil</div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4, fontSize: 13, color: 'var(--ts)' }}>
+                      <span>{gender === 'man' ? '👤 Man' : '👤 Kvinna'}, {age} år</span>
+                      <span>⚖️ {weight} kg, {height} cm</span>
+                      <span>🎯 {GOALS.find(g => g.id === goal)?.label}</span>
+                      <span>📊 {EXPERIENCE.find(e => e.id === experience)?.label}</span>
+                      <span>📅 {trainingDays} dagar/vecka</span>
+                      <span>🏋️ {EQUIPMENT.find(e => e.id === equipment)?.label}</span>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+                    <span className="klarna-badge">Klarna.</span>
+                    <span style={{ fontSize: 12, color: 'var(--td)', display: 'flex', alignItems: 'center' }}>Betala med kort eller Klarna</span>
+                  </div>
+                  <button className="auth-btn" onClick={handleCheckout} disabled={loading || !canPayLoggedIn} style={{ opacity: canPayLoggedIn ? 1 : 0.5 }}>
+                    {loading ? <span className="spinner" /> : `Betala ${product.price} SEK`}
+                  </button>
+                  <p style={{ textAlign: 'center', marginTop: 12, fontSize: 13, color: 'var(--td)' }}>Säker betalning via Stripe. Ditt program genereras direkt.</p>
+                </>
+              ) : (
+                /* If NOT logged in: go to step 4 (account choice) */
+                <button className="auth-btn" onClick={() => setStep(4)}>
+                  Fortsätt <span style={{ marginLeft: 4 }}>→</span>
+                </button>
               )}
+            </>
+          )}
 
-              {/* Sammanfattning */}
-              <div style={{ background: 'rgba(255,69,0,0.05)', border: '1px solid rgba(255,69,0,0.15)', borderRadius: 12, padding: 16, marginBottom: 20 }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--a)', marginBottom: 8 }}>Din profil</div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4, fontSize: 13, color: 'var(--ts)' }}>
-                  <span>{gender === 'man' ? '👤 Man' : '👤 Kvinna'}, {age} år</span>
-                  <span>⚖️ {weight} kg, {height} cm</span>
-                  <span>🎯 {GOALS.find(g => g.id === goal)?.label}</span>
-                  <span>📊 {EXPERIENCE.find(e => e.id === experience)?.label}</span>
-                  <span>📅 {trainingDays} dagar/vecka</span>
-                  <span>🏋️ {EQUIPMENT.find(e => e.id === equipment)?.label}</span>
-                </div>
-              </div>
+          {/* ========== STEG 4: Konto-val (bara för utloggade) ========== */}
+          {step === 4 && !user && (
+            <>
+              {!guestMode ? (
+                <>
+                  <h1 className="auth-title" style={{ fontSize: 22 }}>Hur vill du fortsätta?</h1>
+                  <p className="auth-sub">Steg 4 av 4 — Välj ett alternativ</p>
 
-              {/* Klarna */}
-              <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-                <span className="klarna-badge">Klarna.</span>
-                <span style={{ fontSize: 12, color: 'var(--td)', display: 'flex', alignItems: 'center' }}>Betala med kort eller Klarna</span>
-              </div>
+                  {/* Option 1: Logga in / Skapa konto */}
+                  <div onClick={() => nav(`/login?redirect=/onboarding?product=${productId}`)} style={{
+                    background: 'rgba(255,69,0,0.08)', border: '2px solid rgba(255,69,0,0.3)', borderRadius: 14, padding: 20, marginBottom: 16, cursor: 'pointer', transition: 'all 0.2s',
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+                      <span style={{ fontSize: 28 }}>👤</span>
+                      <div>
+                        <div style={{ fontWeight: 700, fontSize: 16, color: 'var(--t)' }}>Logga in eller skapa konto</div>
+                        <div style={{ fontSize: 13, color: 'var(--a)', fontWeight: 600 }}>Rekommenderat</div>
+                      </div>
+                    </div>
+                    <div style={{ fontSize: 13, color: 'var(--ts)', lineHeight: 1.5, paddingLeft: 40 }}>
+                      ✓ Följ din progress och logga vikter<br/>
+                      ✓ Se ditt program i din dashboard<br/>
+                      ✓ Få 20% rabatt på nästa köp<br/>
+                      ✓ Köp nya svårare program efter avklarat
+                    </div>
+                  </div>
 
-              <button className="auth-btn" onClick={handleCheckout} disabled={loading || !canPay} style={{ opacity: canPay ? 1 : 0.5 }}>
-                {loading ? <span className="spinner" /> : `Betala ${product.price} SEK`}
-              </button>
+                  {/* Option 2: Köp som gäst */}
+                  <div onClick={() => setGuestMode(true)} style={{
+                    background: 'var(--b)', border: '1px solid var(--br)', borderRadius: 14, padding: 20, cursor: 'pointer', transition: 'all 0.2s',
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+                      <span style={{ fontSize: 28 }}>📧</span>
+                      <div>
+                        <div style={{ fontWeight: 700, fontSize: 16, color: 'var(--t)' }}>Köp som gäst</div>
+                        <div style={{ fontSize: 13, color: 'var(--ts)' }}>Få programmet via mejl</div>
+                      </div>
+                    </div>
+                    <div style={{ fontSize: 13, color: 'var(--td)', lineHeight: 1.5, paddingLeft: 40 }}>
+                      Programmet skickas direkt till din e-post efter betalning.
+                    </div>
+                  </div>
+                </>
+              ) : (
+                /* Guest mode: show email + payment */
+                <>
+                  <h1 className="auth-title" style={{ fontSize: 22 }}>Köp som gäst</h1>
+                  <p className="auth-sub">Steg 4 av 4 — Ange din e-post</p>
 
-              <p style={{ textAlign: 'center', marginTop: 12, fontSize: 13, color: 'var(--td)' }}>
-                Säker betalning via Stripe. Ditt program genereras direkt.
-              </p>
+                  <div style={{ marginBottom: 20 }}>
+                    <label style={{ fontSize: 14, fontWeight: 600, color: 'var(--t)', marginBottom: 8, display: 'block' }}>E-post för leverans</label>
+                    <input type="email" className="auth-input" placeholder="din@email.com" value={email} onChange={e => setEmail(e.target.value)} style={{ margin: 0 }} />
+                  </div>
+
+                  {/* Sammanfattning */}
+                  <div style={{ background: 'rgba(255,69,0,0.05)', border: '1px solid rgba(255,69,0,0.15)', borderRadius: 12, padding: 16, marginBottom: 20 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--a)', marginBottom: 8 }}>Din profil</div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4, fontSize: 13, color: 'var(--ts)' }}>
+                      <span>{gender === 'man' ? '👤 Man' : '👤 Kvinna'}, {age} år</span>
+                      <span>⚖️ {weight} kg, {height} cm</span>
+                      <span>🎯 {GOALS.find(g => g.id === goal)?.label}</span>
+                      <span>📊 {EXPERIENCE.find(e => e.id === experience)?.label}</span>
+                      <span>📅 {trainingDays} dagar/vecka</span>
+                      <span>🏋️ {EQUIPMENT.find(e => e.id === equipment)?.label}</span>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+                    <span className="klarna-badge">Klarna.</span>
+                    <span style={{ fontSize: 12, color: 'var(--td)', display: 'flex', alignItems: 'center' }}>Betala med kort eller Klarna</span>
+                  </div>
+
+                  <button className="auth-btn" onClick={handleCheckout} disabled={loading || !canPayGuest} style={{ opacity: canPayGuest ? 1 : 0.5 }}>
+                    {loading ? <span className="spinner" /> : `Betala ${product.price} SEK`}
+                  </button>
+
+                  <p style={{ textAlign: 'center', marginTop: 12, fontSize: 13, color: 'var(--td)' }}>
+                    Programmet skickas till din e-post efter betalning.
+                  </p>
+                </>
+              )}
             </>
           )}
         </div>
-
-        {/* Login link for guests */}
-        {isGuest && (
-          <div style={{ textAlign: 'center', marginTop: 16, marginBottom: 32 }}>
-            <span style={{ fontSize: 13, color: 'var(--td)' }}>Har du konto? </span>
-            <a onClick={() => nav('/login')} style={{ fontSize: 13, color: 'var(--a)', cursor: 'pointer' }}>Logga in</a>
-          </div>
-        )}
       </div>
     </div>
   )
