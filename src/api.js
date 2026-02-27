@@ -42,7 +42,7 @@ export const api = {
     URL.revokeObjectURL(url)
   },
   swapExercise: (programId, weekIdx, dayIdx, exerciseIdx) =>
-    request(`/programs/${programId}/swap-exercise`, 'POST', { week_idx: weekIdx, day_idx: dayIdx, exercise_idx: exerciseIdx }),
+    request(`/programs/${programId}/swap-exercise`, { method: 'POST', body: JSON.stringify({ week_idx: weekIdx, day_idx: dayIdx, exercise_idx: exerciseIdx }) }),
   swapMeal: (programId, weekIdx, dayIdx, mealIdx) =>
-    request(`/programs/${programId}/swap-meal`, 'POST', { week_idx: weekIdx, day_idx: dayIdx, meal_idx: mealIdx }),
+    request(`/programs/${programId}/swap-meal`, { method: 'POST', body: JSON.stringify({ week_idx: weekIdx, day_idx: dayIdx, meal_idx: mealIdx }) }),
 }
