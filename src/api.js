@@ -26,4 +26,19 @@ export const api = {
   guestCheckoutWithProfile: (productType, email, profile) => request('/stripe/guest-checkout', { method: 'POST', body: JSON.stringify({ product_type: productType, email, profile }) }),
   cancelSubscription: () => request('/stripe/cancel-subscription', { method: 'POST' }),
   getOrders: () => request('/users/me/orders'),
+  downloadPdf: async (programId) => {
+    const token = localStorage.getItem('forma_token')
+    const API = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+    const res = await fetch(`${API}/programs/${programId}/pdf`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
+    if (!res.ok) throw new Error('Kunde inte ladda ner PDF')
+    const blob = await res.blob()
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `forma_program.pdf`
+    a.click()
+    URL.revokeObjectURL(url)
+  },
 }

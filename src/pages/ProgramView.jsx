@@ -14,6 +14,7 @@ export default function ProgramView() {
   const [activeDay, setActiveDay] = useState(0)
   const [expandedEx, setExpandedEx] = useState(null)
   const [weightLog, setWeightLog] = useState({})
+  const [downloading, setDownloading] = useState(false)
 
   useEffect(() => {
     api.getProgram(id).then(p => {
@@ -28,6 +29,16 @@ export default function ProgramView() {
     const updated = { ...weightLog, [key]: value }
     setWeightLog(updated)
     api.updateWeightLog(id, updated).catch(() => {})
+  }
+
+  const handleDownloadPdf = async () => {
+    setDownloading(true)
+    try {
+      await api.downloadPdf(id)
+    } catch (err) {
+      alert(err.message)
+    }
+    setDownloading(false)
   }
 
   if (loading) return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><span className="spinner" style={{ width: 32, height: 32 }} /></div>
@@ -45,7 +56,17 @@ export default function ProgramView() {
       <Nav />
       <div className="pv-header">
         <div className="pv-header-inner">
-          <button className="nav-btn" onClick={() => nav('/dashboard')} style={{ marginBottom: 16 }}><Back /> Tillbaka till dashboard</button>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
+            <button className="nav-btn" onClick={() => nav('/dashboard')} style={{ marginBottom: 16 }}><Back /> Tillbaka</button>
+            <button onClick={handleDownloadPdf} disabled={downloading} style={{
+              background: 'rgba(255,69,0,0.1)', border: '1px solid rgba(255,69,0,0.3)', borderRadius: 10,
+              padding: '8px 16px', cursor: 'pointer', fontFamily: 'var(--f)', fontSize: 13, fontWeight: 600, color: 'var(--a)',
+              display: 'flex', alignItems: 'center', gap: 6,
+            }}>
+              {downloading ? <span className="spinner" style={{ width: 14, height: 14 }} /> : '📄'}
+              Ladda ner PDF
+            </button>
+          </div>
           <h1 className="pv-title">{content.title || 'Mitt Program'}</h1>
           {content.description && <p style={{ fontSize: 14, color: 'var(--ts)', marginTop: 8, maxWidth: 600 }}>{content.description}</p>}
           <p className="pv-sub">Version {program.version_number} {currentWeek.theme && <span style={{ color: 'var(--ts)' }}> — {currentWeek.theme}</span>}</p>
