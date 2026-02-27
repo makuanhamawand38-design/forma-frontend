@@ -8,6 +8,8 @@ const PRODUCTS = {
   training: { name: "4 Veckors Träningsprogram", price: 349, weeks: 4 },
   nutrition: { name: "4 Veckors Kostschema", price: 349, weeks: 4 },
   bundle: { name: "8 Veckors Träning + Kost", price: 799, weeks: 8 },
+  pro_monthly: { name: "FORMA Pro", price: 199, weeks: 4, sub: true, label: "199 kr/mån" },
+  pro_yearly: { name: "FORMA Pro Årsplan", price: 149, weeks: 4, sub: true, label: "149 kr/mån (årsvis)" },
 }
 
 const GOALS = [
@@ -99,6 +101,9 @@ export default function Onboarding() {
     }
   }, [user])
 
+  const isSub = product.sub
+  const priceLabel = product.sub ? `Starta prenumeration — ${product.label}` : `Betala ${product.price} SEK`
+
   const canStep1 = gender && age && weight && height
   const canStep2 = goal && experience && equipment
   const canPayLoggedIn = canStep2
@@ -160,6 +165,8 @@ export default function Onboarding() {
     totalSteps = 1 // Just confirmation + pay
   } else if (user) {
     totalSteps = 3 // Normal 3-step for logged in without profile
+  } else if (isSub) {
+    totalSteps = 3 // Subs require login, no guest option — step 3 forces login
   } else {
     totalSteps = 4 // 3 steps + account choice
   }
@@ -195,7 +202,7 @@ export default function Onboarding() {
         <div style={{ background: 'var(--b)', border: '1px solid var(--br)', borderRadius: 12, padding: 16, marginBottom: 24, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(255,69,0,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--a)' }}>{productIcon(productId, 20)}</div>
-            <div><div style={{ fontWeight: 600, color: 'var(--t)' }}>{product.name}</div><div style={{ fontSize: 13, color: 'var(--ts)' }}>{product.price} SEK</div></div>
+            <div><div style={{ fontWeight: 600, color: 'var(--t)' }}>{product.name}</div><div style={{ fontSize: 13, color: 'var(--ts)' }}>{product.sub ? product.label : `${product.price} SEK`}</div></div>
           </div>
           <button onClick={() => nav('/')} style={{ background: 'none', border: 'none', color: 'var(--ts)', cursor: 'pointer', fontSize: 13, fontFamily: 'var(--f)' }}>Ändra</button>
         </div>
@@ -239,13 +246,13 @@ export default function Onboarding() {
                 ✏️ Nej, jag vill ändra mina uppgifter
               </button>
 
-              <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+              {!isSub && <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
                 <span className="klarna-badge">Klarna.</span>
                 <span style={{ fontSize: 12, color: 'var(--td)', display: 'flex', alignItems: 'center' }}>Betala med kort eller Klarna</span>
-              </div>
+              </div>}
 
               <button className="auth-btn" onClick={handleCheckout} disabled={loading}>
-                {loading ? <span className="spinner" /> : `Betala ${product.price} SEK`}
+                {loading ? <span className="spinner" /> : priceLabel}
               </button>
 
               <p style={{ textAlign: 'center', marginTop: 12, fontSize: 13, color: 'var(--td)' }}>
@@ -416,16 +423,30 @@ export default function Onboarding() {
                       <span>🏋️ {EQUIPMENT.find(e => e.id === equipment)?.label}</span>
                     </div>
                   </div>
-                  <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+                  {!isSub && <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
                     <span className="klarna-badge">Klarna.</span>
                     <span style={{ fontSize: 12, color: 'var(--td)', display: 'flex', alignItems: 'center' }}>Betala med kort eller Klarna</span>
-                  </div>
+                  </div>}
                   <button className="auth-btn" onClick={handleCheckout} disabled={loading || !canPayLoggedIn} style={{ opacity: canPayLoggedIn ? 1 : 0.5 }}>
-                    {loading ? <span className="spinner" /> : `Betala ${product.price} SEK`}
+                    {loading ? <span className="spinner" /> : priceLabel}
                   </button>
                   <p style={{ textAlign: 'center', marginTop: 12, fontSize: 13, color: 'var(--td)' }}>Säker betalning via Stripe. Ditt program genereras direkt.</p>
                 </>
+              ) : isSub ? (
+                /* Subscription requires login */
+                <>
+                  <div style={{ background: 'rgba(255,69,0,0.08)', border: '1px solid rgba(255,69,0,0.2)', borderRadius: 14, padding: 20, marginBottom: 16, textAlign: 'center' }}>
+                    <span style={{ fontSize: 32, display: 'block', marginBottom: 12 }}>👤</span>
+                    <div style={{ fontWeight: 700, fontSize: 16, color: 'var(--t)', marginBottom: 8 }}>Logga in för att starta Pro</div>
+                    <p style={{ fontSize: 13, color: 'var(--ts)', marginBottom: 16, lineHeight: 1.5 }}>Du behöver ett konto för att hantera din prenumeration och se dina program.</p>
+                    <button className="auth-btn" onClick={() => nav(`/login?redirect=/onboarding?product=${productId}`)} style={{ marginBottom: 8 }}>
+                      Logga in
+                    </button>
+                    <div style={{ fontSize: 13, color: 'var(--td)', marginTop: 8 }}>Har du inget konto? <a onClick={() => nav('/register')} style={{ color: 'var(--a)', cursor: 'pointer' }}>Skapa konto</a></div>
+                  </div>
+                </>
               ) : (
+                /* One-time: go to step 4 (account choice) */
                 <button className="auth-btn" onClick={() => setStep(4)}>
                   Fortsätt <span style={{ marginLeft: 4 }}>→</span>
                 </button>
@@ -502,7 +523,7 @@ export default function Onboarding() {
                   </div>
 
                   <button className="auth-btn" onClick={handleCheckout} disabled={loading || !canPayGuest} style={{ opacity: canPayGuest ? 1 : 0.5 }}>
-                    {loading ? <span className="spinner" /> : `Betala ${product.price} SEK`}
+                    {loading ? <span className="spinner" /> : priceLabel}
                   </button>
 
                   <p style={{ textAlign: 'center', marginTop: 12, fontSize: 13, color: 'var(--td)' }}>
