@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { api } from '../api'
 import Nav from '../components/Nav'
 import { Back, Dumbbell } from '../components/Icons'
+import ProgressChart from '../components/ProgressChart'
 
 export default function ProgramView() {
   const { id } = useParams()
@@ -17,7 +18,6 @@ export default function ProgramView() {
   useEffect(() => {
     api.getProgram(id).then(p => {
       setProgram(p)
-      // Load saved weight log from program data
       if (p.weight_log) setWeightLog(p.weight_log)
     }).catch(() => nav('/dashboard')).finally(() => setLoading(false))
   }, [id])
@@ -27,7 +27,6 @@ export default function ProgramView() {
   const updateWeightLog = (key, value) => {
     const updated = { ...weightLog, [key]: value }
     setWeightLog(updated)
-    // Save to backend
     api.updateWeightLog(id, updated).catch(() => {})
   }
 
@@ -53,7 +52,6 @@ export default function ProgramView() {
         </div>
       </div>
 
-      {/* Vecka-tabs */}
       <div style={{ background: 'var(--c)', borderBottom: '1px solid var(--br)' }}>
         <div className="pv-tabs">
           {weeks.map((w, i) => (
@@ -62,7 +60,6 @@ export default function ProgramView() {
         </div>
       </div>
 
-      {/* Dag-tabs */}
       <div style={{ borderBottom: '1px solid var(--br)' }}>
         <div className="pv-tabs">
           {days.map((d, i) => (
@@ -75,7 +72,6 @@ export default function ProgramView() {
         <h2 style={{ fontSize: 20, fontWeight: 600, marginBottom: 4 }}>{currentDay.day_name} — {currentDay.focus || ''}</h2>
         <p style={{ fontSize: 14, color: 'var(--ts)', marginBottom: 24 }}>{exercises.length} övningar</p>
 
-        {/* Uppvärmning */}
         {currentDay.warmup && (
           <div style={{ background: 'rgba(255,69,0,0.05)', border: '1px solid rgba(255,69,0,0.15)', borderRadius: 12, padding: 16, marginBottom: 20 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
@@ -86,7 +82,6 @@ export default function ProgramView() {
           </div>
         )}
 
-        {/* Övningar */}
         {exercises.map((ex, i) => {
           const isExpanded = expandedEx === i
           const numSets = parseInt(ex.sets) || 4
@@ -98,7 +93,6 @@ export default function ProgramView() {
                 <div style={{ flex: 1 }}>
                   <div className="ex-name">{ex.name}</div>
                   <div className="ex-stats"><span>{ex.sets} set</span><span>{ex.reps} reps</span><span>Vila: {ex.rest}</span></div>
-                  {/* Föreslagen vikt */}
                   {(ex.suggested_weight_male || ex.suggested_weight_female) && (
                     <div style={{ fontSize: 12, color: 'var(--td)', marginTop: 4 }}>
                       Föreslagen vikt: {ex.suggested_weight_male && <span>♂ {ex.suggested_weight_male}</span>}{ex.suggested_weight_male && ex.suggested_weight_female && ' / '}{ex.suggested_weight_female && <span>♀ {ex.suggested_weight_female}</span>}
@@ -108,10 +102,8 @@ export default function ProgramView() {
                 <div style={{ color: 'var(--ts)', fontSize: 20, transition: 'transform 0.2s', transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>▾</div>
               </div>
 
-              {/* Expanderat innehåll */}
               {isExpanded && (
                 <div style={{ marginTop: 16, borderTop: '1px solid var(--br)', paddingTop: 16 }} onClick={e => e.stopPropagation()}>
-                  {/* Beskrivning */}
                   {ex.description && (
                     <div style={{ marginBottom: 16 }}>
                       <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--t)', marginBottom: 6 }}>Så gör du:</div>
@@ -119,7 +111,6 @@ export default function ProgramView() {
                     </div>
                   )}
 
-                  {/* Coach tip */}
                   {ex.coach_tip && (
                     <div style={{ background: 'rgba(255,69,0,0.08)', border: '1px solid rgba(255,69,0,0.15)', borderRadius: 8, padding: 12, marginBottom: 16 }}>
                       <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--a)', marginBottom: 4 }}>💡 Coach-tips</div>
@@ -127,14 +118,12 @@ export default function ProgramView() {
                     </div>
                   )}
 
-                  {/* Notes */}
                   {ex.notes && !ex.coach_tip && (
                     <div style={{ marginBottom: 16 }}>
                       <p style={{ fontSize: 13, color: 'var(--ts)', fontStyle: 'italic' }}>{ex.notes}</p>
                     </div>
                   )}
 
-                  {/* Viktloggning */}
                   <div style={{ marginBottom: 8 }}>
                     <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--t)', marginBottom: 10 }}>📝 Logga din vikt</div>
                     <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(numSets, 6)}, 1fr)`, gap: 8 }}>
@@ -166,7 +155,6 @@ export default function ProgramView() {
           )
         })}
 
-        {/* Nedvarvning */}
         {currentDay.cooldown && (
           <div style={{ background: 'rgba(100,149,237,0.05)', border: '1px solid rgba(100,149,237,0.15)', borderRadius: 12, padding: 16, marginTop: 20 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
@@ -176,6 +164,9 @@ export default function ProgramView() {
             <p style={{ fontSize: 13, color: 'var(--ts)', lineHeight: 1.5 }}>{currentDay.cooldown}</p>
           </div>
         )}
+
+        {/* Progress Chart */}
+        <ProgressChart weightLog={weightLog} weeks={weeks} activeDay={activeDay} />
 
         {/* Nutrition section for bundle */}
         {content.nutrition && (
