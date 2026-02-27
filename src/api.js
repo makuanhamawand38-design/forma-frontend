@@ -41,4 +41,8 @@ export const api = {
     a.click()
     URL.revokeObjectURL(url)
   },
+  swapExercise: (programId, weekIdx, dayIdx, exerciseIdx) =>
+    request(`/programs/${programId}/swap-exercise`, 'POST', { week_idx: weekIdx, day_idx: dayIdx, exercise_idx: exerciseIdx }),
+  swapMeal: (programId, weekIdx, dayIdx, mealIdx) =>
+    request(`/programs/${programId}/swap-meal`, 'POST', { week_idx: weekIdx, day_idx: dayIdx, meal_idx: mealIdx }),
 }

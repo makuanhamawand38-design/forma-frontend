@@ -15,6 +15,7 @@ export default function ProgramView() {
   const [expandedEx, setExpandedEx] = useState(null)
   const [weightLog, setWeightLog] = useState({})
   const [downloading, setDownloading] = useState(false)
+  const [swapping, setSwapping] = useState(null) // 'ex-2' or 'meal-3'
 
   useEffect(() => {
     api.getProgram(id).then(p => {
@@ -37,34 +38,47 @@ export default function ProgramView() {
     setDownloading(false)
   }
 
+  const handleSwapExercise = async (exIdx) => {
+    setSwapping(`ex-${exIdx}`)
+    try {
+      await api.swapExercise(id, activeWeek, activeDay, exIdx)
+      const updated = await api.getProgram(id)
+      setProgram(updated)
+    } catch (err) { alert(err.message) }
+    setSwapping(null)
+  }
+
+  const handleSwapMeal = async (mealIdx) => {
+    setSwapping(`meal-${mealIdx}`)
+    try {
+      await api.swapMeal(id, activeWeek, activeDay, mealIdx)
+      const updated = await api.getProgram(id)
+      setProgram(updated)
+    } catch (err) { alert(err.message) }
+    setSwapping(null)
+  }
+
   if (loading) return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><span className="spinner" style={{ width: 32, height: 32 }} /></div>
   if (!program || !program.content) return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--ts)' }}>Programmet har inte genererats ännu.</div>
 
   const content = program.content
   const productType = program.product_type
 
-  // Detect content type
   const isBundle = productType === 'bundle' || !!content.training
   const isNutritionOnly = productType === 'nutrition' || (!content.training && !!(content.weeks?.[0]?.days?.[0]?.meals))
   const isTrainingOnly = productType === 'training' || (!content.training && !!(content.weeks?.[0]?.days?.[0]?.exercises))
 
-  // Get training weeks
   const trainingWeeks = isBundle ? (content.training?.weeks || []) : (isTrainingOnly ? (content.weeks || []) : [])
-
-  // Get nutrition weeks
   const nutritionWeeks = isBundle ? (content.nutrition?.weeks || []) : (isNutritionOnly ? (content.weeks || []) : [])
 
-  // Use training weeks for tabs if available, otherwise nutrition weeks
   const weeks = trainingWeeks.length > 0 ? trainingWeeks : nutritionWeeks
   const currentWeek = weeks[activeWeek] || {}
   const days = currentWeek.days || []
   const currentDay = days[activeDay] || {}
 
-  // Training data for current day
   const exercises = currentDay.exercises || []
   const hasTraining = exercises.length > 0
 
-  // Nutrition data for current day
   let currentNutritionDay = null
   if (isBundle && nutritionWeeks.length > 0) {
     const nWeek = nutritionWeeks[activeWeek] || nutritionWeeks[0] || {}
@@ -76,15 +90,19 @@ export default function ProgramView() {
   const meals = currentNutritionDay?.meals || []
   const hasMeals = meals.length > 0
 
-  // Nutrition overview
   const nutritionOverview = isBundle ? content.nutrition : (isNutritionOnly ? content : null)
   const dailyCals = nutritionOverview?.daily_calories
   const macros = nutritionOverview?.macros || {}
 
-  // Shopping list
   const currentShoppingList = isBundle
     ? (nutritionWeeks[activeWeek]?.shopping_list || [])
     : (isNutritionOnly ? (currentWeek.shopping_list || []) : [])
+
+  const swapBtnStyle = {
+    background: 'none', border: '1px solid var(--br)', borderRadius: 8, padding: '6px 12px',
+    cursor: 'pointer', fontFamily: 'var(--f)', fontSize: 12, color: 'var(--ts)',
+    display: 'inline-flex', alignItems: 'center', gap: 4, transition: 'all 0.2s',
+  }
 
   return (
     <div>
@@ -106,7 +124,6 @@ export default function ProgramView() {
           {content.description && <p style={{ fontSize: 14, color: 'var(--ts)', marginTop: 8, maxWidth: 600 }}>{content.description}</p>}
           <p className="pv-sub">Version {program.version_number} {currentWeek.theme && <span style={{ color: 'var(--ts)' }}> — {currentWeek.theme}</span>}</p>
 
-          {/* Nutrition overview banner */}
           {dailyCals && (
             <div style={{ display: 'flex', gap: 16, marginTop: 12, flexWrap: 'wrap' }}>
               <div style={{ background: 'rgba(255,69,0,0.08)', borderRadius: 8, padding: '6px 14px', fontSize: 13, color: 'var(--a)', fontWeight: 600 }}>
@@ -120,7 +137,6 @@ export default function ProgramView() {
         </div>
       </div>
 
-      {/* Week tabs */}
       <div style={{ background: 'var(--c)', borderBottom: '1px solid var(--br)' }}>
         <div className="pv-tabs">
           {weeks.map((w, i) => (
@@ -129,7 +145,6 @@ export default function ProgramView() {
         </div>
       </div>
 
-      {/* Day tabs */}
       <div style={{ borderBottom: '1px solid var(--br)' }}>
         <div className="pv-tabs">
           {days.map((d, i) => (
@@ -140,7 +155,7 @@ export default function ProgramView() {
 
       <div className="pv-content">
 
-        {/* ===== TRAINING SECTION ===== */}
+        {/* ===== TRAINING ===== */}
         {hasTraining && (
           <>
             <h2 style={{ fontSize: 20, fontWeight: 600, marginBottom: 4 }}>{currentDay.day_name} — {currentDay.focus || ''}</h2>
@@ -159,9 +174,10 @@ export default function ProgramView() {
             {exercises.map((ex, i) => {
               const isExpanded = expandedEx === i
               const numSets = parseInt(ex.sets) || 4
+              const isSwapping = swapping === `ex-${i}`
 
               return (
-                <div key={i} className="ex-card" style={{ cursor: 'pointer', flexDirection: 'column', alignItems: 'stretch' }} onClick={() => setExpandedEx(isExpanded ? null : i)}>
+                <div key={i} className="ex-card" style={{ cursor: 'pointer', flexDirection: 'column', alignItems: 'stretch', opacity: isSwapping ? 0.6 : 1, transition: 'opacity 0.3s' }} onClick={() => setExpandedEx(isExpanded ? null : i)}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
                     <div className="ex-gif"><Dumbbell size={32} /></div>
                     <div style={{ flex: 1 }}>
@@ -192,13 +208,7 @@ export default function ProgramView() {
                         </div>
                       )}
 
-                      {ex.notes && !ex.coach_tip && (
-                        <div style={{ marginBottom: 16 }}>
-                          <p style={{ fontSize: 13, color: 'var(--ts)', fontStyle: 'italic' }}>{ex.notes}</p>
-                        </div>
-                      )}
-
-                      <div style={{ marginBottom: 8 }}>
+                      <div style={{ marginBottom: 12 }}>
                         <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--t)', marginBottom: 10 }}>📝 Logga din vikt</div>
                         <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(numSets, 6)}, 1fr)`, gap: 8 }}>
                           {Array.from({ length: numSets }).map((_, s) => {
@@ -214,8 +224,7 @@ export default function ProgramView() {
                                   style={{
                                     width: '100%', padding: '8px 4px', borderRadius: 8, border: '1px solid var(--br)',
                                     background: weightLog[key] ? 'rgba(255,69,0,0.1)' : 'var(--b)',
-                                    color: 'var(--t)', textAlign: 'center', fontSize: 14, fontFamily: 'var(--f)',
-                                    outline: 'none',
+                                    color: 'var(--t)', textAlign: 'center', fontSize: 14, fontFamily: 'var(--f)', outline: 'none',
                                   }}
                                 />
                               </div>
@@ -223,6 +232,12 @@ export default function ProgramView() {
                           })}
                         </div>
                       </div>
+
+                      {/* Swap exercise button */}
+                      <button onClick={() => handleSwapExercise(i)} disabled={isSwapping} style={swapBtnStyle}>
+                        {isSwapping ? <span className="spinner" style={{ width: 12, height: 12 }} /> : '🔄'}
+                        {isSwapping ? 'Byter övning...' : 'Byt ut övning'}
+                      </button>
                     </div>
                   )}
                 </div>
@@ -239,12 +254,11 @@ export default function ProgramView() {
               </div>
             )}
 
-            {/* Progress Chart */}
             <ProgressChart weightLog={weightLog} weeks={trainingWeeks} activeDay={activeDay} />
           </>
         )}
 
-        {/* ===== NUTRITION SECTION ===== */}
+        {/* ===== NUTRITION ===== */}
         {hasMeals && (
           <div style={{ marginTop: hasTraining ? 40 : 0 }}>
             {hasTraining && <h2 style={{ fontSize: 20, fontWeight: 600, marginBottom: 16 }}>🍽️ Dagens måltider</h2>}
@@ -262,64 +276,56 @@ export default function ProgramView() {
               </>
             )}
 
-            {meals.map((meal, mi) => (
-              <div key={mi} style={{ background: 'var(--b)', border: '1px solid var(--br)', borderRadius: 12, padding: 16, marginBottom: 12 }}>
-                {/* Meal header */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
-                  <div>
-                    <div style={{ fontSize: 12, color: 'var(--a)', fontWeight: 600, marginBottom: 2 }}>{meal.meal}</div>
-                    <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--t)' }}>{meal.name}</div>
-                    {meal.prep_time && <div style={{ fontSize: 12, color: 'var(--td)', marginTop: 2 }}>⏱️ {meal.prep_time}</div>}
+            {meals.map((meal, mi) => {
+              const isSwapping = swapping === `meal-${mi}`
+              return (
+                <div key={mi} style={{ background: 'var(--b)', border: '1px solid var(--br)', borderRadius: 12, padding: 16, marginBottom: 12, opacity: isSwapping ? 0.6 : 1, transition: 'opacity 0.3s' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
+                    <div>
+                      <div style={{ fontSize: 12, color: 'var(--a)', fontWeight: 600, marginBottom: 2 }}>{meal.meal}</div>
+                      <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--t)' }}>{meal.name}</div>
+                      {meal.prep_time && <div style={{ fontSize: 12, color: 'var(--td)', marginTop: 2 }}>⏱️ {meal.prep_time}</div>}
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--a)' }}>{meal.calories} kcal</div>
+                    </div>
                   </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--a)' }}>{meal.calories} kcal</div>
+
+                  <div style={{ display: 'flex', gap: 12, marginBottom: 12, flexWrap: 'wrap' }}>
+                    {meal.protein != null && <div style={{ background: 'rgba(59,130,246,0.1)', borderRadius: 6, padding: '4px 10px', fontSize: 12, color: '#3b82f6', fontWeight: 600 }}>Protein: {meal.protein}g</div>}
+                    {meal.carbs != null && <div style={{ background: 'rgba(234,179,8,0.1)', borderRadius: 6, padding: '4px 10px', fontSize: 12, color: '#eab308', fontWeight: 600 }}>Kolhydrater: {meal.carbs}g</div>}
+                    {meal.fat != null && <div style={{ background: 'rgba(168,85,247,0.1)', borderRadius: 6, padding: '4px 10px', fontSize: 12, color: '#a855f7', fontWeight: 600 }}>Fett: {meal.fat}g</div>}
                   </div>
+
+                  {meal.ingredients && meal.ingredients.length > 0 && (
+                    <div style={{ marginBottom: 12 }}>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--t)', marginBottom: 6 }}>🥗 Ingredienser:</div>
+                      <div style={{ fontSize: 13, color: 'var(--ts)', lineHeight: 1.7 }}>
+                        {meal.ingredients.map((ing, ii) => (
+                          <div key={ii} style={{ display: 'flex', alignItems: 'center', gap: 6, paddingLeft: 4 }}>
+                            <span style={{ color: 'var(--a)', fontSize: 8 }}>●</span> {ing}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {meal.prep_notes && (
+                    <div style={{ background: 'rgba(255,69,0,0.05)', border: '1px solid rgba(255,69,0,0.1)', borderRadius: 8, padding: 12, marginBottom: 12 }}>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--a)', marginBottom: 4 }}>👨‍🍳 Tillagning:</div>
+                      <p style={{ fontSize: 13, color: 'var(--ts)', lineHeight: 1.6, margin: 0 }}>{meal.prep_notes}</p>
+                    </div>
+                  )}
+
+                  {/* Swap meal button */}
+                  <button onClick={() => handleSwapMeal(mi)} disabled={isSwapping} style={swapBtnStyle}>
+                    {isSwapping ? <span className="spinner" style={{ width: 12, height: 12 }} /> : '🔄'}
+                    {isSwapping ? 'Byter måltid...' : 'Byt ut måltid'}
+                  </button>
                 </div>
+              )
+            })}
 
-                {/* Macros bar */}
-                <div style={{ display: 'flex', gap: 12, marginBottom: 12, flexWrap: 'wrap' }}>
-                  {meal.protein != null && (
-                    <div style={{ background: 'rgba(59,130,246,0.1)', borderRadius: 6, padding: '4px 10px', fontSize: 12, color: '#3b82f6', fontWeight: 600 }}>
-                      Protein: {meal.protein}g
-                    </div>
-                  )}
-                  {meal.carbs != null && (
-                    <div style={{ background: 'rgba(234,179,8,0.1)', borderRadius: 6, padding: '4px 10px', fontSize: 12, color: '#eab308', fontWeight: 600 }}>
-                      Kolhydrater: {meal.carbs}g
-                    </div>
-                  )}
-                  {meal.fat != null && (
-                    <div style={{ background: 'rgba(168,85,247,0.1)', borderRadius: 6, padding: '4px 10px', fontSize: 12, color: '#a855f7', fontWeight: 600 }}>
-                      Fett: {meal.fat}g
-                    </div>
-                  )}
-                </div>
-
-                {/* Ingredients */}
-                {meal.ingredients && meal.ingredients.length > 0 && (
-                  <div style={{ marginBottom: 12 }}>
-                    <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--t)', marginBottom: 6 }}>🥗 Ingredienser:</div>
-                    <div style={{ fontSize: 13, color: 'var(--ts)', lineHeight: 1.7 }}>
-                      {meal.ingredients.map((ing, ii) => (
-                        <div key={ii} style={{ display: 'flex', alignItems: 'center', gap: 6, paddingLeft: 4 }}>
-                          <span style={{ color: 'var(--a)', fontSize: 8 }}>●</span> {ing}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Prep notes */}
-                {meal.prep_notes && (
-                  <div style={{ background: 'rgba(255,69,0,0.05)', border: '1px solid rgba(255,69,0,0.1)', borderRadius: 8, padding: 12 }}>
-                    <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--a)', marginBottom: 4 }}>👨‍🍳 Tillagning:</div>
-                    <p style={{ fontSize: 13, color: 'var(--ts)', lineHeight: 1.6, margin: 0 }}>{meal.prep_notes}</p>
-                  </div>
-                )}
-              </div>
-            ))}
-
-            {/* Daily total */}
             {currentNutritionDay?.total_calories && !hasTraining && (
               <div style={{ background: 'rgba(255,69,0,0.08)', border: '1px solid rgba(255,69,0,0.2)', borderRadius: 12, padding: 16, marginTop: 8, textAlign: 'center' }}>
                 <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--t)', marginBottom: 4 }}>Dagstotal</div>
@@ -370,7 +376,6 @@ export default function ProgramView() {
           </div>
         )}
 
-        {/* No content fallback */}
         {!hasTraining && !hasMeals && (
           <div style={{ textAlign: 'center', padding: 48, color: 'var(--ts)' }}>
             <p>Inget innehåll att visa för denna dag.</p>
