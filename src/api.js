@@ -24,5 +24,6 @@ export const api = {
   createCheckout: (productType) => request('/stripe/create-checkout', { method: 'POST', body: JSON.stringify({ product_type: productType }) }),
   guestCheckout: (productType, email) => request('/stripe/guest-checkout', { method: 'POST', body: JSON.stringify({ product_type: productType, email }) }),
   guestCheckoutWithProfile: (productType, email, profile) => request('/stripe/guest-checkout', { method: 'POST', body: JSON.stringify({ product_type: productType, email, profile }) }),
+  cancelSubscription: () => request('/stripe/cancel-subscription', { method: 'POST' }),
   getOrders: () => request('/users/me/orders'),
 }
