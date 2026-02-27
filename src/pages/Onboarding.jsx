@@ -33,7 +33,6 @@ const EQUIPMENT = [
 
 const DIET_TYPES = [
   { id: "none", label: "Inga restriktioner", desc: "Jag äter allt" },
-  { id: "halal", label: "Halal", desc: "Ingen fläsk, halal kött" },
   { id: "pork_free", label: "Fläskfritt", desc: "Ingen fläsk" },
   { id: "vegetarian", label: "Vegetarian", desc: "Ingen kött eller fisk" },
   { id: "vegan", label: "Vegan", desc: "Helt växtbaserat" },
