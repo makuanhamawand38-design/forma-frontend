@@ -4,6 +4,7 @@ import { api } from '../api'
 import Nav from '../components/Nav'
 import { Back, Dumbbell } from '../components/Icons'
 import ProgressChart from '../components/ProgressChart'
+import { XpToast } from '../components/XpSystem'
 
 export default function ProgramView() {
   const { id } = useParams()
@@ -16,6 +17,7 @@ export default function ProgramView() {
   const [weightLog, setWeightLog] = useState({})
   const [downloading, setDownloading] = useState(false)
   const [swapping, setSwapping] = useState(null) // 'ex-2' or 'meal-3'
+  const [xpToast, setXpToast] = useState(null)
 
   useEffect(() => {
     api.getProgram(id).then(p => {
@@ -30,6 +32,9 @@ export default function ProgramView() {
     const updated = { ...weightLog, [key]: value }
     setWeightLog(updated)
     api.updateWeightLog(id, updated).catch(() => {})
+    if (value && !weightLog[key]) {
+      api.addXp('log_weight', { weight: value }).then(r => setXpToast(r)).catch(() => {})
+    }
   }
 
   const handleDownloadPdf = async () => {
@@ -44,6 +49,7 @@ export default function ProgramView() {
       await api.swapExercise(id, activeWeek, activeDay, exIdx)
       const updated = await api.getProgram(id)
       setProgram(updated)
+      api.addXp('swap_exercise').then(r => setXpToast(r)).catch(() => {})
     } catch (err) { alert(err.message) }
     setSwapping(null)
   }
@@ -54,6 +60,7 @@ export default function ProgramView() {
       await api.swapMeal(id, activeWeek, activeDay, mealIdx)
       const updated = await api.getProgram(id)
       setProgram(updated)
+      api.addXp('swap_meal').then(r => setXpToast(r)).catch(() => {})
     } catch (err) { alert(err.message) }
     setSwapping(null)
   }
@@ -382,6 +389,8 @@ export default function ProgramView() {
           </div>
         )}
       </div>
+
+      <XpToast data={xpToast} onClose={() => setXpToast(null)} />
     </div>
   )
 }

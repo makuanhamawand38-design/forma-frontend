@@ -45,4 +45,6 @@ export const api = {
     request(`/programs/${programId}/swap-exercise`, { method: 'POST', body: JSON.stringify({ week_idx: weekIdx, day_idx: dayIdx, exercise_idx: exerciseIdx }) }),
   swapMeal: (programId, weekIdx, dayIdx, mealIdx) =>
     request(`/programs/${programId}/swap-meal`, { method: 'POST', body: JSON.stringify({ week_idx: weekIdx, day_idx: dayIdx, meal_idx: mealIdx }) }),
+  getXp: () => request('/users/me/xp'),
+  addXp: (action, meta = {}) => request('/users/me/xp/add', { method: 'POST', body: JSON.stringify({ action, meta }) }),
 }

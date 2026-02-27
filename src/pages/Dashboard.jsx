@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import { api } from '../api'
 import Nav from '../components/Nav'
 import { productIcon, catBg, Sparkle, Play, CheckCircle, Zap } from '../components/Icons'
+import { XpBar } from '../components/XpSystem'
 
 const NAMES = { training: "4 Veckors Träningsprogram", nutrition: "4 Veckors Kostschema", bundle: "8 Veckors Träning + Kost" }
 
@@ -84,6 +85,9 @@ export default function Dashboard() {
             )}
           </div>
         </div>
+
+        {/* XP System */}
+        {!loading && <XpBar />}
 
         {/* Stats */}
         {!loading && programs.length > 0 && (
