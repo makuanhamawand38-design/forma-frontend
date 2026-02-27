@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { api } from '../api'
@@ -63,8 +63,41 @@ export default function Onboarding() {
   const [preferences, setPreferences] = useState('')
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
-  const [step, setStep] = useState(1)
+  const [profileLoaded, setProfileLoaded] = useState(false)
+  const [hasExistingProfile, setHasExistingProfile] = useState(false)
   const [guestMode, setGuestMode] = useState(false)
+
+  // For logged-in users: determine starting step
+  // If profile exists → start at confirmation (step 1 = confirm), else normal flow
+  const [step, setStep] = useState(1)
+
+  // Load profile for logged-in users
+  useEffect(() => {
+    if (user) {
+      api.getProfile().then(p => {
+        const hasProfile = p.gender && p.age && p.current_weight && p.height && p.goal && p.experience
+        if (hasProfile) {
+          setGender(p.gender || 'man')
+          setAge(p.age || '')
+          setWeight(p.current_weight || '')
+          setHeight(p.height || '')
+          setGoal(p.goal || '')
+          setExperience(p.experience || '')
+          setTrainingDays(p.training_days || 4)
+          setEquipment(p.equipment || 'gym')
+          setInjuries(p.injuries || '')
+          setAvoidExercises(p.avoid_exercises || '')
+          setDietType(p.diet_type || 'none')
+          setAllergies(p.allergies || '')
+          setPreferences(p.preferences || '')
+          setHasExistingProfile(true)
+        }
+        setProfileLoaded(true)
+      }).catch(() => setProfileLoaded(true))
+    } else {
+      setProfileLoaded(true)
+    }
+  }, [user])
 
   const canStep1 = gender && age && weight && height
   const canStep2 = goal && experience && equipment
@@ -117,9 +150,24 @@ export default function Onboarding() {
     </button>
   )
 
-  // Determine total steps: 4 if not logged in (extra account step), 3 if logged in
-  const totalSteps = user ? 3 : 4
-  const progressStep = step
+  if (!profileLoaded) {
+    return <div className="auth-page"><span className="spinner" style={{ width: 32, height: 32 }} /></div>
+  }
+
+  // Determine total steps based on state
+  let totalSteps
+  if (user && hasExistingProfile) {
+    totalSteps = 1 // Just confirmation + pay
+  } else if (user) {
+    totalSteps = 3 // Normal 3-step for logged in without profile
+  } else {
+    totalSteps = 4 // 3 steps + account choice
+  }
+
+  // For logged-in users WITH existing profile: show confirmation directly
+  const showConfirmation = user && hasExistingProfile && step === 1
+  // For logged-in users WITHOUT profile: normal 3 steps
+  // For guests: 3 steps + account choice (step 4)
 
   return (
     <div className="auth-page">
@@ -134,9 +182,10 @@ export default function Onboarding() {
 
         {/* Back */}
         <button onClick={() => {
-          if (step === 1) nav(-1)
-          else if (step === 4 && !guestMode) setStep(3)
-          else if (step === 4 && guestMode) { setGuestMode(false); setStep(3) }
+          if (showConfirmation) nav(-1)
+          else if (step === 1) nav(-1)
+          else if (step === 4 && guestMode) { setGuestMode(false) }
+          else if (step === 4) setStep(3)
           else setStep(step - 1)
         }} style={{ background: 'none', border: 'none', color: 'var(--ts)', cursor: 'pointer', fontFamily: 'var(--f)', fontSize: 14, display: 'flex', alignItems: 'center', gap: 6, marginBottom: 16, padding: 0 }}>
           ← Tillbaka
@@ -154,14 +203,59 @@ export default function Onboarding() {
         {/* Progress bar */}
         <div style={{ display: 'flex', gap: 8, marginBottom: 32 }}>
           {Array.from({ length: totalSteps }).map((_, i) => (
-            <div key={i} style={{ flex: 1, height: 4, borderRadius: 2, background: progressStep >= i + 1 ? 'var(--a)' : 'var(--br)' }} />
+            <div key={i} style={{ flex: 1, height: 4, borderRadius: 2, background: step >= i + 1 ? 'var(--a)' : 'var(--br)' }} />
           ))}
         </div>
 
         <div className="auth-box" style={{ maxWidth: 560 }}>
 
-          {/* ========== STEG 1: Personlig info ========== */}
-          {step === 1 && (
+          {/* ========== LOGGED IN WITH PROFILE: Confirmation ========== */}
+          {showConfirmation && (
+            <>
+              <h1 className="auth-title" style={{ fontSize: 22 }}>Stämmer dina uppgifter?</h1>
+              <p className="auth-sub">Kontrollera att allt ser rätt ut innan du betalar</p>
+
+              <div style={{ background: 'rgba(255,69,0,0.05)', border: '1px solid rgba(255,69,0,0.15)', borderRadius: 12, padding: 20, marginBottom: 20 }}>
+                <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--a)', marginBottom: 12 }}>Din profil</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, fontSize: 14 }}>
+                  <div style={{ color: 'var(--ts)' }}>👤 <strong style={{ color: 'var(--t)' }}>{gender === 'man' ? 'Man' : 'Kvinna'}</strong>, {age} år</div>
+                  <div style={{ color: 'var(--ts)' }}>⚖️ <strong style={{ color: 'var(--t)' }}>{weight} kg</strong>, {height} cm</div>
+                  <div style={{ color: 'var(--ts)' }}>🎯 <strong style={{ color: 'var(--t)' }}>{GOALS.find(g => g.id === goal)?.label}</strong></div>
+                  <div style={{ color: 'var(--ts)' }}>📊 <strong style={{ color: 'var(--t)' }}>{EXPERIENCE.find(e => e.id === experience)?.label}</strong></div>
+                  <div style={{ color: 'var(--ts)' }}>📅 <strong style={{ color: 'var(--t)' }}>{trainingDays} dagar/vecka</strong></div>
+                  <div style={{ color: 'var(--ts)' }}>🏋️ <strong style={{ color: 'var(--t)' }}>{EQUIPMENT.find(e => e.id === equipment)?.label}</strong></div>
+                </div>
+                {injuries && <div style={{ marginTop: 10, fontSize: 13, color: 'var(--ts)' }}>🩹 Skador: <strong style={{ color: 'var(--t)' }}>{injuries}</strong></div>}
+                {avoidExercises && <div style={{ marginTop: 4, fontSize: 13, color: 'var(--ts)' }}>🚫 Undviker: <strong style={{ color: 'var(--t)' }}>{avoidExercises}</strong></div>}
+                {dietType && dietType !== 'none' && <div style={{ marginTop: 4, fontSize: 13, color: 'var(--ts)' }}>🥗 Kost: <strong style={{ color: 'var(--t)' }}>{DIET_TYPES.find(d => d.id === dietType)?.label}</strong></div>}
+                {allergies && <div style={{ marginTop: 4, fontSize: 13, color: 'var(--ts)' }}>⚠️ Allergier: <strong style={{ color: 'var(--t)' }}>{allergies}</strong></div>}
+                {preferences && <div style={{ marginTop: 4, fontSize: 13, color: 'var(--ts)' }}>💬 Övrigt: <strong style={{ color: 'var(--t)' }}>{preferences}</strong></div>}
+              </div>
+
+              <button onClick={() => { setHasExistingProfile(false); setStep(1) }} style={{
+                background: 'none', border: '1px solid var(--br)', borderRadius: 10, padding: '10px 20px', cursor: 'pointer',
+                fontFamily: 'var(--f)', fontSize: 13, color: 'var(--ts)', width: '100%', marginBottom: 16,
+              }}>
+                ✏️ Nej, jag vill ändra mina uppgifter
+              </button>
+
+              <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+                <span className="klarna-badge">Klarna.</span>
+                <span style={{ fontSize: 12, color: 'var(--td)', display: 'flex', alignItems: 'center' }}>Betala med kort eller Klarna</span>
+              </div>
+
+              <button className="auth-btn" onClick={handleCheckout} disabled={loading}>
+                {loading ? <span className="spinner" /> : `Betala ${product.price} SEK`}
+              </button>
+
+              <p style={{ textAlign: 'center', marginTop: 12, fontSize: 13, color: 'var(--td)' }}>
+                Säker betalning via Stripe. Ditt program genereras direkt.
+              </p>
+            </>
+          )}
+
+          {/* ========== STEG 1: Personlig info (only if no existing profile) ========== */}
+          {!showConfirmation && step === 1 && (
             <>
               <h1 className="auth-title" style={{ fontSize: 22 }}>Anpassa ditt program</h1>
               <p className="auth-sub">Steg 1 av {totalSteps} — Berätta om dig</p>
@@ -309,10 +403,8 @@ export default function Onboarding() {
                   style={{ margin: 0, minHeight: 60, resize: 'vertical', fontFamily: 'var(--f)' }} />
               </div>
 
-              {/* If logged in: go straight to payment summary */}
               {user ? (
                 <>
-                  {/* Sammanfattning */}
                   <div style={{ background: 'rgba(255,69,0,0.05)', border: '1px solid rgba(255,69,0,0.15)', borderRadius: 12, padding: 16, marginBottom: 20 }}>
                     <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--a)', marginBottom: 8 }}>Din profil</div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4, fontSize: 13, color: 'var(--ts)' }}>
@@ -334,7 +426,6 @@ export default function Onboarding() {
                   <p style={{ textAlign: 'center', marginTop: 12, fontSize: 13, color: 'var(--td)' }}>Säker betalning via Stripe. Ditt program genereras direkt.</p>
                 </>
               ) : (
-                /* If NOT logged in: go to step 4 (account choice) */
                 <button className="auth-btn" onClick={() => setStep(4)}>
                   Fortsätt <span style={{ marginLeft: 4 }}>→</span>
                 </button>
@@ -350,9 +441,8 @@ export default function Onboarding() {
                   <h1 className="auth-title" style={{ fontSize: 22 }}>Hur vill du fortsätta?</h1>
                   <p className="auth-sub">Steg 4 av 4 — Välj ett alternativ</p>
 
-                  {/* Option 1: Logga in / Skapa konto */}
                   <div onClick={() => nav(`/login?redirect=/onboarding?product=${productId}`)} style={{
-                    background: 'rgba(255,69,0,0.08)', border: '2px solid rgba(255,69,0,0.3)', borderRadius: 14, padding: 20, marginBottom: 16, cursor: 'pointer', transition: 'all 0.2s',
+                    background: 'rgba(255,69,0,0.08)', border: '2px solid rgba(255,69,0,0.3)', borderRadius: 14, padding: 20, marginBottom: 16, cursor: 'pointer',
                   }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
                       <span style={{ fontSize: 28 }}>👤</span>
@@ -369,9 +459,8 @@ export default function Onboarding() {
                     </div>
                   </div>
 
-                  {/* Option 2: Köp som gäst */}
                   <div onClick={() => setGuestMode(true)} style={{
-                    background: 'var(--b)', border: '1px solid var(--br)', borderRadius: 14, padding: 20, cursor: 'pointer', transition: 'all 0.2s',
+                    background: 'var(--b)', border: '1px solid var(--br)', borderRadius: 14, padding: 20, cursor: 'pointer',
                   }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
                       <span style={{ fontSize: 28 }}>📧</span>
@@ -386,7 +475,6 @@ export default function Onboarding() {
                   </div>
                 </>
               ) : (
-                /* Guest mode: show email + payment */
                 <>
                   <h1 className="auth-title" style={{ fontSize: 22 }}>Köp som gäst</h1>
                   <p className="auth-sub">Steg 4 av 4 — Ange din e-post</p>
@@ -396,7 +484,6 @@ export default function Onboarding() {
                     <input type="email" className="auth-input" placeholder="din@email.com" value={email} onChange={e => setEmail(e.target.value)} style={{ margin: 0 }} />
                   </div>
 
-                  {/* Sammanfattning */}
                   <div style={{ background: 'rgba(255,69,0,0.05)', border: '1px solid rgba(255,69,0,0.15)', borderRadius: 12, padding: 16, marginBottom: 20 }}>
                     <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--a)', marginBottom: 8 }}>Din profil</div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4, fontSize: 13, color: 'var(--ts)' }}>

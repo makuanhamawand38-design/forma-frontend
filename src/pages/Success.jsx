@@ -46,7 +46,6 @@ export default function Success() {
         <div className="auth-box" style={{ maxWidth: 520, textAlign: 'center' }}>
           {!generated ? (
             <>
-              {/* Celebration */}
               <div style={{ fontSize: 64, marginBottom: 16 }}>🎉</div>
               <h1 className="auth-title" style={{ fontSize: 26 }}>Tack för ditt köp!</h1>
               <p className="auth-sub" style={{ maxWidth: 400, margin: '8px auto 32px' }}>
@@ -71,7 +70,7 @@ export default function Success() {
                     {generating ? (
                       <>
                         <span className="spinner" />
-                        <span>AI:n skapar ditt program...</span>
+                        <span>Skapar ditt program...</span>
                       </>
                     ) : (
                       <>
@@ -89,19 +88,21 @@ export default function Success() {
                           <span style={{ fontSize: 13, color: 'var(--ts)' }}>Analyserar din profil...</span>
                         </div>
                         <div style={{ fontSize: 12, color: 'var(--td)', lineHeight: 1.6 }}>
-                          Vår AI skapar ett helt unikt program baserat på dina mål, erfarenhet och preferenser. Det tar vanligtvis 15-30 sekunder.
+                          Vi skapar ett helt unikt program baserat på dina mål, erfarenhet och preferenser. Det tar vanligtvis 1–3 minuter.
                         </div>
                       </div>
                     </div>
                   )}
                 </>
               ) : (
-                <p style={{ color: 'var(--ts)', fontSize: 14 }}>Ditt program har redan genererats!</p>
+                <>
+                  <p style={{ color: 'var(--ts)', fontSize: 14, marginBottom: 20 }}>Ditt program har redan genererats!</p>
+                  <button className="auth-btn" onClick={() => nav('/dashboard')}>Gå till dashboard</button>
+                </>
               )}
             </>
           ) : (
             <>
-              {/* Generated success */}
               <div style={{ fontSize: 64, marginBottom: 16 }}>💪</div>
               <h1 className="auth-title" style={{ fontSize: 26 }}>Ditt program är klart!</h1>
               <p className="auth-sub" style={{ maxWidth: 400, margin: '8px auto 32px' }}>
