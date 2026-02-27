@@ -335,6 +335,39 @@ export default function Profile() {
                 </div>
               </div>
 
+              {profile.subscription_status === 'active' && (
+                <div className="profile-card" style={{ marginBottom: 24 }}>
+                  <h3>Prenumeration</h3>
+                  <div style={{ background: 'rgba(255,69,0,0.1)', border: '1px solid rgba(255,69,0,0.2)', borderRadius: 12, padding: 16 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <Zap size={20} />
+                        <span style={{ fontWeight: 700, fontSize: 16, color: 'var(--a)' }}>FORMA Pro</span>
+                      </div>
+                      <span style={{ fontSize: 12, padding: '4px 10px', borderRadius: 20, background: profile.subscription_cancel_at_period_end ? 'rgba(255,200,0,0.1)' : 'rgba(34,197,94,0.1)', color: profile.subscription_cancel_at_period_end ? '#f59e0b' : '#22c55e', fontWeight: 600 }}>
+                        {profile.subscription_cancel_at_period_end ? 'Avslutas vid periodens slut' : 'Aktiv'}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: 13, color: 'var(--ts)', marginBottom: 12 }}>
+                      {profile.subscription_type === 'pro_yearly' ? '149 kr/mån (årsplan)' : '199 kr/mån'}
+                    </div>
+                    <div style={{ fontSize: 13, color: 'var(--ts)', lineHeight: 1.6 }}>
+                      ✓ Nytt program varje månad<br/>
+                      ✓ Träning + kost inkluderat<br/>
+                      ✓ Automatisk progression
+                    </div>
+                    {!profile.subscription_cancel_at_period_end && (
+                      <button onClick={async () => { if (confirm('Vill du avsluta din prenumeration? Den gäller till periodens slut.')) { try { await api.cancelSubscription(); const p = await api.getProfile(); setProfile(p) } catch(e) { alert(e.message) }}}} style={{
+                        background: 'none', border: '1px solid var(--br)', borderRadius: 8, padding: '8px 16px', cursor: 'pointer',
+                        fontFamily: 'var(--f)', fontSize: 12, color: 'var(--td)', marginTop: 12,
+                      }}>
+                        Avsluta prenumeration
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {profile.has_discount && (
                 <div className="profile-card" style={{ marginBottom: 24 }}>
                   <h3>Rabattstatus</h3>
