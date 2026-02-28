@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
 import { Dumbbell } from './Icons'
 
-// Cache to avoid refetching
 const imageCache = {}
+const API_KEY = '87e820ac92mshd0b7a5e4df21869p139da7jsn7aac1920b031'
 
 export default function ExerciseImage({ name, size = 80 }) {
   const [src, setSrc] = useState(null)
@@ -13,46 +13,27 @@ export default function ExerciseImage({ name, size = 80 }) {
 
     const key = name.toLowerCase().trim()
 
-    // Check cache
     if (imageCache[key] !== undefined) {
       if (imageCache[key]) setSrc(imageCache[key])
       else setFailed(true)
       return
     }
 
-    // Use wger.de open API (no key needed)
-    fetch(`https://wger.de/api/v2/exercise/search/?term=${encodeURIComponent(key)}&language=english&format=json`)
+    fetch(`https://exercisedb.p.rapidapi.com/exercises/name/${encodeURIComponent(key)}?limit=1`, {
+      headers: {
+        'X-RapidAPI-Key': API_KEY,
+        'X-RapidAPI-Host': 'exercisedb.p.rapidapi.com',
+      }
+    })
       .then(r => r.json())
       .then(data => {
-        const suggestions = data?.suggestions || []
-        if (suggestions.length > 0) {
-          const exData = suggestions[0]?.data
-          if (exData?.image) {
-            const imgUrl = exData.image.startsWith('http') ? exData.image : `https://wger.de${exData.image}`
-            imageCache[key] = imgUrl
-            setSrc(imgUrl)
-            return
-          }
-          // Try fetching image from exercise ID
-          if (exData?.id) {
-            fetch(`https://wger.de/api/v2/exerciseimage/?exercise_base=${exData.id}&format=json`)
-              .then(r => r.json())
-              .then(imgData => {
-                if (imgData?.results?.length > 0) {
-                  const imgUrl = imgData.results[0].image
-                  imageCache[key] = imgUrl
-                  setSrc(imgUrl)
-                } else {
-                  imageCache[key] = null
-                  setFailed(true)
-                }
-              })
-              .catch(() => { imageCache[key] = null; setFailed(true) })
-            return
-          }
+        if (data && data.length > 0 && data[0].gifUrl) {
+          imageCache[key] = data[0].gifUrl
+          setSrc(data[0].gifUrl)
+        } else {
+          imageCache[key] = null
+          setFailed(true)
         }
-        imageCache[key] = null
-        setFailed(true)
       })
       .catch(() => { imageCache[key] = null; setFailed(true) })
   }, [name])
