@@ -12,6 +12,7 @@ import Success from './pages/Success'
 import Dashboard from './pages/Dashboard'
 import ProgramView from './pages/ProgramView'
 import Profile from './pages/Profile'
+import CookieConsent from './components/CookieConsent'
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth()
@@ -22,6 +23,7 @@ function ProtectedRoute({ children }) {
 
 export default function App() {
   return (
+    <>
     <Routes>
       <Route path="/" element={<Home />} />
       <Route path="/login" element={<Login />} />
@@ -36,5 +38,7 @@ export default function App() {
       <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
       <Route path="*" element={<NotFound />} />
     </Routes>
+    <CookieConsent />
+    </>
   )
 }
