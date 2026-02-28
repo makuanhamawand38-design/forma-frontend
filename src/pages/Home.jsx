@@ -226,8 +226,8 @@ export default function Home() {
               {ONE_TIME.map((p, i) => (
                 <div key={p.id} className={`product-card animate delay-${i + 1} ${p.id === 'bundle' ? 'popular' : ''}`} onClick={() => handleBuy(p.id)}>
                   {p.id === 'bundle' && <div className="popular-badge">Populärast</div>}
-                  <div className="product-img" style={{ background: catBg(p.cat) }}>
-                    <div className="product-img-overlay" />
+<div className="product-img" style={{ background: `url('${p.cat === "training" ? "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=600&q=80" : p.cat === "nutrition" ? "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=600&q=80" : "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=600&q=80"}') center/cover` }}>
+                                      <div className="product-img-overlay" />
                     <div className="product-img-icon">{productIcon(p.cat)}</div>
                   </div>
                   <div className="product-body">
