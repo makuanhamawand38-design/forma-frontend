@@ -76,8 +76,7 @@ export default function Dashboard() {
               </div>
             )}
             {!isPro && (
-              <button onClick={() => nav('/#pricing')} style={{
-                background: 'rgba(255,69,0,0.1)', border: '1px solid rgba(255,69,0,0.2)', borderRadius: 10,
+              <button onClick={() => { window.location.href = '/#pricing' }} style={{                background: 'rgba(255,69,0,0.1)', border: '1px solid rgba(255,69,0,0.2)', borderRadius: 10,
                 padding: '8px 16px', cursor: 'pointer', fontFamily: 'var(--f)', fontSize: 13, fontWeight: 600, color: 'var(--a)',
               }}>
                 ⚡ Uppgradera till Pro
