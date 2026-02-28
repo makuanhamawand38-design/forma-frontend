@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import Nav from '../components/Nav'
@@ -38,6 +38,12 @@ export default function Home() {
   const nav = useNavigate()
   const { user } = useAuth()
   const [pricingTab, setPricingTab] = useState('pro')
+useEffect(() => {
+    if (window.location.hash) {
+      const el = document.querySelector(window.location.hash)
+      if (el) setTimeout(() => el.scrollIntoView({ behavior: 'smooth' }), 300)
+    }
+  }, [])
 
   const handleBuy = (productId) => {
     nav(`/onboarding?product=${productId}`)
