@@ -87,7 +87,8 @@ export function XpBar() {
                   <div style={{ fontSize: 28, marginBottom: 6 }}>{ach.icon}</div>
                   <div style={{ fontSize: 12, fontWeight: 700, color: unlocked ? 'var(--a)' : 'var(--td)', marginBottom: 2 }}>{ach.name}</div>
                   <div style={{ fontSize: 11, color: 'var(--td)' }}>{ach.desc}</div>
-                  {unlocked && <div style={{ fontSize: 10, color: '#22c55e', marginTop: 4 }}>✓ Upplåst</div>}
+                  <div style={{ fontSize: 11, fontWeight: 700, color: unlocked ? '#22c55e' : 'var(--td)', marginTop: 4 }}>+{ach.xp} XP</div>
+                  {unlocked && <div style={{ fontSize: 10, color: '#22c55e', marginTop: 2 }}>✓ Upplåst</div>}
                 </div>
               )
             })}
