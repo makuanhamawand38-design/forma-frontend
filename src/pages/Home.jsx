@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import Nav from '../components/Nav'
@@ -38,12 +38,6 @@ export default function Home() {
   const nav = useNavigate()
   const { user } = useAuth()
   const [pricingTab, setPricingTab] = useState('pro')
-useEffect(() => {
-    if (window.location.hash) {
-      const el = document.querySelector(window.location.hash)
-      if (el) setTimeout(() => el.scrollIntoView({ behavior: 'smooth' }), 300)
-    }
-  }, [])
 
   const handleBuy = (productId) => {
     nav(`/onboarding?product=${productId}`)
@@ -198,7 +192,7 @@ useEffect(() => {
                     <Check size={16} /> {f}
                   </div>
                 ))}
-                <button className="btn-primary" style={{ width: '100%', marginTop: 20, padding: '14px 0' }} onClick={() => handleBuy('pro_monthly')}>
+                <button className="btn-primary" style={{ width: '100%', marginTop: 20, padding: '14px 0', textAlign: 'center' }} onClick={() => handleBuy('pro_monthly')}>
                   Starta Pro
                 </button>
               </div>
@@ -219,7 +213,7 @@ useEffect(() => {
                     <Check size={16} /> {f}
                   </div>
                 ))}
-                <button className="btn-primary" style={{ width: '100%', marginTop: 20, padding: '14px 0' }} onClick={() => handleBuy('pro_yearly')}>
+                <button className="btn-primary" style={{ width: '100%', marginTop: 20, padding: '14px 0', textAlign: 'center' }} onClick={() => handleBuy('pro_yearly')}>
                   Starta Årsplan
                 </button>
               </div>
@@ -232,8 +226,8 @@ useEffect(() => {
               {ONE_TIME.map((p, i) => (
                 <div key={p.id} className={`product-card animate delay-${i + 1} ${p.id === 'bundle' ? 'popular' : ''}`} onClick={() => handleBuy(p.id)}>
                   {p.id === 'bundle' && <div className="popular-badge">Populärast</div>}
-<div className="product-img" style={{ background: `url('${p.cat === "training" ? "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=600&q=80" : p.cat === "nutrition" ? "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=600&q=80" : "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=600&q=80"}') center/cover` }}>
-                                      <div className="product-img-overlay" />
+                  <div className="product-img" style={{ background: catBg(p.cat) }}>
+                    <div className="product-img-overlay" />
                     <div className="product-img-icon">{productIcon(p.cat)}</div>
                   </div>
                   <div className="product-body">
