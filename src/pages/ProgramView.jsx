@@ -5,6 +5,7 @@ import Nav from '../components/Nav'
 import { Back, Dumbbell } from '../components/Icons'
 import ProgressChart from '../components/ProgressChart'
 import { XpToast } from '../components/XpSystem'
+import ExerciseImage from '../components/ExerciseImage'
 
 export default function ProgramView() {
   const { id } = useParams()
@@ -186,7 +187,7 @@ export default function ProgramView() {
               return (
                 <div key={i} className="ex-card" style={{ cursor: 'pointer', flexDirection: 'column', alignItems: 'stretch', opacity: isSwapping ? 0.6 : 1, transition: 'opacity 0.3s' }} onClick={() => setExpandedEx(isExpanded ? null : i)}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                    <div className="ex-gif"><Dumbbell size={32} /></div>
+                    <ExerciseImage name={ex.name} size={80} />
                     <div style={{ flex: 1 }}>
                       <div className="ex-name">{ex.name}</div>
                       <div className="ex-stats"><span>{ex.sets} set</span><span>{ex.reps} reps</span><span>Vila: {ex.rest}</span></div>
