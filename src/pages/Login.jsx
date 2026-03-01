@@ -5,7 +5,7 @@ import { api } from '../api'
 import { Zap, Lock } from '../components/Icons'
 
 export default function Login() {
-  const [email, setEmail] = useState('')
+  const [identifier, setIdentifier] = useState('')
   const [pw, setPw] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -17,7 +17,7 @@ export default function Login() {
     setError('')
     setLoading(true)
     try {
-      const data = await api.login(email, pw)
+      const data = await api.login(identifier, pw)
       login(data.token, data.email)
       nav('/dashboard')
     } catch (err) {
@@ -41,7 +41,7 @@ export default function Login() {
           <p className="auth-sub">Logga in för att komma åt dina program</p>
           {error && <div className="auth-error">{error}</div>}
           <form onSubmit={handleSubmit}>
-            <div className="auth-field"><label className="auth-label">E-postadress</label><input type="email" className="auth-input" placeholder="din@email.com" value={email} onChange={e => setEmail(e.target.value)} required /></div>
+            <div className="auth-field"><label className="auth-label">E-post eller användarnamn</label><input type="text" className="auth-input" placeholder="din@email.com eller användarnamn" value={identifier} onChange={e => setIdentifier(e.target.value)} required /></div>
             <div className="auth-field"><label className="auth-label">Lösenord</label><input type="password" className="auth-input" placeholder="••••••••" value={pw} onChange={e => setPw(e.target.value)} required /></div>
             <div style={{ textAlign: 'right', marginTop: -8, marginBottom: 16 }}>
               <Link to="/forgot-password" style={{ fontSize: 13, color: 'var(--a)' }}>Glömt lösenord?</Link>
