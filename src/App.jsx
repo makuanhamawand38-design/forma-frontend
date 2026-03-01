@@ -13,6 +13,7 @@ import Dashboard from './pages/Dashboard'
 import ProgramView from './pages/ProgramView'
 import Profile from './pages/Profile'
 import Terms from './pages/Terms'
+import UsernameSetup from './pages/UsernameSetup'
 import CookieConsent from './components/CookieConsent'
 
 function ProtectedRoute({ children }) {
@@ -33,6 +34,7 @@ export default function App() {
       <Route path="/onboarding" element={<Onboarding />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
+      <Route path="/setup-username" element={<ProtectedRoute><UsernameSetup /></ProtectedRoute>} />
       <Route path="/success" element={<ProtectedRoute><Success /></ProtectedRoute>} />
       <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
       <Route path="/program/:id" element={<ProtectedRoute><ProgramView /></ProtectedRoute>} />
