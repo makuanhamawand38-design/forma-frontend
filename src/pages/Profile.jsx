@@ -60,12 +60,14 @@ export default function Profile() {
   const [dietType, setDietType] = useState('none')
   const [allergies, setAllergies] = useState('')
   const [preferences, setPreferences] = useState('')
+  const [displayNamePublic, setDisplayNamePublic] = useState(false)
 
   useEffect(() => {
     api.getProfile().then(p => {
       setProfile(p)
       setFirstName(p.first_name || '')
       setLastName(p.last_name || '')
+      setDisplayNamePublic(p.display_name_public || false)
       setGender(p.gender || '')
       setAge(p.age || '')
       setWeight(p.current_weight || '')
@@ -90,6 +92,7 @@ export default function Profile() {
       const data = {
         first_name: firstName || undefined,
         last_name: lastName || undefined,
+        display_name_public: displayNamePublic,
         gender: gender || undefined,
         age: age ? parseInt(age) : undefined,
         current_weight: weight ? parseFloat(weight) : undefined,
@@ -154,9 +157,16 @@ export default function Profile() {
               <div className="profile-card" style={{ marginBottom: 24 }}>
                 <h3>Personlig info</h3>
 
+                {profile.username && (
+                  <div className="profile-field">
+                    <div className="profile-label">Användarnamn</div>
+                    <div className="profile-val" style={{ color: 'var(--a)', fontWeight: 600 }}>@{profile.username}</div>
+                  </div>
+                )}
+
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                   <div className="profile-field">
-                    <div className="profile-label">Förnamn</div>
+                    <div className="profile-label">Förnamn <span style={{ fontSize: 11, color: 'var(--td)', fontWeight: 400 }}>(valfritt)</span></div>
                     {editing ? (
                       <input type="text" className="profile-input" value={firstName} onChange={e => setFirstName(e.target.value)} placeholder="Johan" />
                     ) : (
@@ -164,12 +174,36 @@ export default function Profile() {
                     )}
                   </div>
                   <div className="profile-field">
-                    <div className="profile-label">Efternamn</div>
+                    <div className="profile-label">Efternamn <span style={{ fontSize: 11, color: 'var(--td)', fontWeight: 400 }}>(valfritt)</span></div>
                     {editing ? (
                       <input type="text" className="profile-input" value={lastName} onChange={e => setLastName(e.target.value)} placeholder="Andersson" />
                     ) : (
                       <div className="profile-val">{lastName || 'Ej angivet'}</div>
                     )}
+                  </div>
+                </div>
+
+                <div className="profile-field">
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div>
+                      <div className="profile-label" style={{ marginBottom: 2 }}>Visa mitt namn</div>
+                      <div style={{ fontSize: 12, color: 'var(--td)' }}>Visa för- och efternamn på din publika profil</div>
+                    </div>
+                    <button
+                      onClick={() => editing && setDisplayNamePublic(!displayNamePublic)}
+                      disabled={!editing}
+                      style={{
+                        width: 44, height: 24, borderRadius: 12, border: 'none', cursor: editing ? 'pointer' : 'default',
+                        background: displayNamePublic ? 'var(--a)' : 'var(--br)',
+                        position: 'relative', transition: 'background .2s', flexShrink: 0,
+                      }}
+                    >
+                      <span style={{
+                        position: 'absolute', top: 2, left: displayNamePublic ? 22 : 2,
+                        width: 20, height: 20, borderRadius: '50%', background: '#fff',
+                        transition: 'left .2s', boxShadow: '0 1px 3px rgba(0,0,0,.2)',
+                      }} />
+                    </button>
                   </div>
                 </div>
 
