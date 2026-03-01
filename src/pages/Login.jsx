@@ -19,7 +19,7 @@ export default function Login() {
     try {
       const data = await api.login(email, pw)
       login(data.token, data.email)
-      nav(data.needs_username ? '/setup-username' : '/dashboard')
+      nav('/dashboard')
     } catch (err) {
       setError(err.message)
     }

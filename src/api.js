@@ -9,7 +9,7 @@ async function request(path, options = {}) {
   return data
 }
 export const api = {
-  register: (email, password, first_name, last_name) => request('/auth/register', { method: 'POST', body: JSON.stringify({ email, password, first_name, last_name }) }),
+  register: (email, password, username) => request('/auth/register', { method: 'POST', body: JSON.stringify({ email, password, username }) }),
   login: (email, password) => request('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) }),
   forgotPassword: (email) => request('/auth/forgot-password', { method: 'POST', body: JSON.stringify({ email }) }),
   resetPassword: (token, password) => request('/auth/reset-password', { method: 'POST', body: JSON.stringify({ token, password }) }),
