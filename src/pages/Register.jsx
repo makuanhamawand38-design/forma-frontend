@@ -25,7 +25,7 @@ export default function Register() {
     try {
       const data = await api.register(email, pw, firstName.trim(), lastName.trim())
       login(data.token, data.email)
-      nav('/dashboard')
+      nav(data.needs_username ? '/setup-username' : '/dashboard')
     } catch (err) {
       setError(err.message)
     }
