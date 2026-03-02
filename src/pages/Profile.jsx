@@ -45,6 +45,8 @@ export default function Profile() {
   const [sports, setSports] = useState([])
   const [referralData, setReferralData] = useState(null)
   const [copied, setCopied] = useState(false)
+  const [blockedUsers, setBlockedUsers] = useState([])
+  const [showBlocked, setShowBlocked] = useState(false)
 
   useEffect(() => {
     api.getProfile().then(p => {
@@ -63,6 +65,7 @@ export default function Profile() {
       setHeight(p.height || '')
     }).catch(() => {})
     api.getMyReferrals().then(setReferralData).catch(() => {})
+    api.getBlockedUsers().then(d => setBlockedUsers(d.blocked || [])).catch(() => {})
   }, [])
 
   const toggleSport = (s) => {
@@ -588,6 +591,68 @@ export default function Profile() {
                 </div>
               )}
 
+              {/* Blocked users */}
+              <div className="profile-card" style={{ marginBottom: 24 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <h3 style={{ margin: 0 }}>Blockerade användare</h3>
+                  <button
+                    onClick={() => setShowBlocked(!showBlocked)}
+                    style={{
+                      background: 'none', border: 'none', cursor: 'pointer',
+                      fontFamily: 'var(--f)', fontSize: 13, fontWeight: 500, color: 'var(--a)',
+                    }}
+                  >
+                    {showBlocked ? 'Dölj' : `Visa (${blockedUsers.length})`}
+                  </button>
+                </div>
+                {showBlocked && (
+                  blockedUsers.length === 0 ? (
+                    <p style={{ fontSize: 13, color: 'var(--td)', marginTop: 12 }}>
+                      Du har inte blockerat någon.
+                    </p>
+                  ) : (
+                    <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      {blockedUsers.map(b => (
+                        <div key={b.username} style={{
+                          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                          padding: '8px 12px', background: 'var(--b)', borderRadius: 8, border: '1px solid var(--br)',
+                        }}>
+                          <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--t)' }}>@{b.username}</span>
+                          <button
+                            onClick={async () => {
+                              try {
+                                await api.unblockUser(b.username)
+                                setBlockedUsers(prev => prev.filter(x => x.username !== b.username))
+                              } catch (e) { alert(e.message) }
+                            }}
+                            style={{
+                              padding: '5px 14px', borderRadius: 6, border: '1px solid var(--br)',
+                              background: 'none', fontFamily: 'var(--f)', fontSize: 12, fontWeight: 500,
+                              color: 'var(--ts)', cursor: 'pointer',
+                            }}
+                          >
+                            Avblockera
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )
+                )}
+              </div>
+
+              {/* Community guidelines link */}
+              <div className="profile-card">
+                <a href="/guidelines" style={{
+                  display: 'flex', alignItems: 'center', gap: 10,
+                  textDecoration: 'none', color: 'var(--t)', fontSize: 14, fontWeight: 500,
+                }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--a)" strokeWidth="2">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                  </svg>
+                  Community-riktlinjer
+                  <span style={{ marginLeft: 'auto', color: 'var(--td)' }}>→</span>
+                </a>
+              </div>
             </div>
           </div>
         ) : (

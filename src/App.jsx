@@ -19,6 +19,7 @@ import Competitions from './pages/Competitions'
 import Messages from './pages/Messages'
 import Notifications from './pages/Notifications'
 import FindPartner from './pages/FindPartner'
+import Guidelines from './pages/Guidelines'
 import CookieConsent from './components/CookieConsent'
 
 function ProtectedRoute({ children }) {
@@ -49,6 +50,7 @@ export default function App() {
       <Route path="/messages" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
       <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
       <Route path="/find-partner" element={<ProtectedRoute><FindPartner /></ProtectedRoute>} />
+      <Route path="/guidelines" element={<Guidelines />} />
       <Route path="/villkor" element={<Terms />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
