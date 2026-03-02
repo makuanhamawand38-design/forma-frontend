@@ -27,6 +27,9 @@ export default function Nav() {
                 <Link to="/feed"><button className={`nav-btn ${path === '/feed' ? 'active' : ''}`}>Flöde</button></Link>
                 <Link to="/explore"><button className={`nav-btn ${path === '/explore' ? 'active' : ''}`}>Utforska</button></Link>
                 <Link to="/dashboard"><button className={`nav-btn ${path === '/dashboard' ? 'active' : ''}`}><Grid size={16} />Dashboard</button></Link>
+                {(!user.subscription_type || user.subscription_type === 'free') && (
+                  <Link to="/pricing"><button className="nav-btn-primary" style={{ padding: '6px 16px', fontSize: 13 }}><Zap size={14} />Uppgradera</button></Link>
+                )}
                 {user.username && <Link to={`/user/${user.username}`}><button className={`nav-btn ${path.startsWith('/user/') ? 'active' : ''}`} style={{ color: 'var(--a)', fontWeight: 600 }}>@{user.username}</button></Link>}
                 <button className="nav-btn" onClick={logout}><LogOut size={16} /></button>
               </>
@@ -87,6 +90,16 @@ export default function Nav() {
                   <Grid size={16} /> Dashboard
                 </div>
               </Link>
+              {(!user.subscription_type || user.subscription_type === 'free') && (
+                <Link to="/pricing" onClick={closeMenu} style={{ textDecoration: 'none' }}>
+                  <div style={{
+                    ...mobileLink(path === '/pricing'),
+                    background: 'rgba(255,69,0,0.1)', color: 'var(--a)', fontWeight: 600,
+                  }}>
+                    <Zap size={16} /> Uppgradera
+                  </div>
+                </Link>
+              )}
               {user.username && (
                 <Link to={`/user/${user.username}`} onClick={closeMenu} style={{ textDecoration: 'none' }}>
                   <div style={mobileLink(path.startsWith('/user/'))}>
