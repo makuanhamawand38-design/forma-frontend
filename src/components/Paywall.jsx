@@ -19,7 +19,7 @@ const PLANS = {
     productType: 'pro_monthly',
     color: '#FF4500',
     icon: Sparkle,
-    features: ['AI-träningsprogram', 'AI-kostschema', 'Byt övningar & måltider', 'Exportera PDF'],
+    features: ['Personliga träningsprogram', 'Personliga kostscheman', 'Byt övningar & måltider', 'Exportera PDF'],
   },
 }
 
