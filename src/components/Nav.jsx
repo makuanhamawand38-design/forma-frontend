@@ -22,7 +22,6 @@ export default function Nav() {
 
           {/* Desktop nav */}
           <div className="nav-links nav-desktop">
-            <Link to="/#pricing"><button className={`nav-btn ${path === '/shop' ? 'active' : ''}`}>Program</button></Link>
             {user ? (
               <>
                 <Link to="/dashboard"><button className={`nav-btn ${path === '/dashboard' ? 'active' : ''}`}><Grid size={16} />Dashboard</button></Link>
@@ -70,9 +69,6 @@ export default function Nav() {
         boxShadow: menuOpen ? '0 8px 30px rgba(0,0,0,0.5)' : 'none',
       }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <Link to="/#pricing" onClick={closeMenu} style={{ textDecoration: 'none' }}>
-            <div style={mobileLink(false)}>Program</div>
-          </Link>
           {user ? (
             <>
               <Link to="/dashboard" onClick={closeMenu} style={{ textDecoration: 'none' }}>
