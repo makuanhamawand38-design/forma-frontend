@@ -31,6 +31,18 @@ const DIET_TYPES = [
   { id: "gluten_free", label: "Glutenfri" },
 ]
 
+const CITIES = [
+  "Stockholm", "Göteborg", "Malmö", "Uppsala", "Linköping",
+  "Örebro", "Västerås", "Helsingborg", "Norrköping", "Jönköping",
+  "Umeå", "Lund", "Borås", "Sundsvall", "Gävle",
+]
+
+const SPORTS = [
+  "Gym", "Löpning", "Fotboll", "Cykling", "Basket", "Simning",
+  "Padel", "Kampsport", "Klättring", "Tennis", "Yoga", "CrossFit",
+  "Dans", "Vandring", "Skidåkning", "Annat",
+]
+
 const PRODUCT_NAMES = {
   training: "Träningsprogram",
   nutrition: "Kostschema",
@@ -61,6 +73,10 @@ export default function Profile() {
   const [allergies, setAllergies] = useState('')
   const [preferences, setPreferences] = useState('')
   const [displayNamePublic, setDisplayNamePublic] = useState(false)
+  const [bio, setBio] = useState('')
+  const [city, setCity] = useState('')
+  const [gym, setGym] = useState('')
+  const [sports, setSports] = useState([])
 
   useEffect(() => {
     api.getProfile().then(p => {
@@ -68,6 +84,10 @@ export default function Profile() {
       setFirstName(p.first_name || '')
       setLastName(p.last_name || '')
       setDisplayNamePublic(p.display_name_public || false)
+      setBio(p.bio || '')
+      setCity(p.city || '')
+      setGym(p.gym || '')
+      setSports(p.sports || [])
       setGender(p.gender || '')
       setAge(p.age || '')
       setWeight(p.current_weight || '')
@@ -85,6 +105,14 @@ export default function Profile() {
     api.getOrders().then(setOrders).catch(() => {})
   }, [])
 
+  const toggleSport = (s) => {
+    if (sports.includes(s)) {
+      setSports(sports.filter(x => x !== s))
+    } else if (sports.length < 5) {
+      setSports([...sports, s])
+    }
+  }
+
   const save = async () => {
     setSaving(true)
     setSaved(false)
@@ -93,6 +121,10 @@ export default function Profile() {
         first_name: firstName || undefined,
         last_name: lastName || undefined,
         display_name_public: displayNamePublic,
+        bio: bio || undefined,
+        city: city || undefined,
+        gym: gym || undefined,
+        sports: sports,
         gender: gender || undefined,
         age: age ? parseInt(age) : undefined,
         current_weight: weight ? parseFloat(weight) : undefined,
@@ -164,6 +196,16 @@ export default function Profile() {
                   </div>
                 )}
 
+                <div className="profile-field">
+                  <div className="profile-label">Bio <span style={{ fontSize: 11, color: 'var(--td)', fontWeight: 400 }}>({bio.length}/150)</span></div>
+                  {editing ? (
+                    <textarea className="profile-input" value={bio} onChange={e => e.target.value.length <= 150 && setBio(e.target.value)} placeholder="Berätta kort om dig själv..."
+                      style={{ minHeight: 60, resize: 'vertical', fontFamily: 'var(--f)' }} />
+                  ) : (
+                    <div className="profile-val">{bio || 'Ej angivet'}</div>
+                  )}
+                </div>
+
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                   <div className="profile-field">
                     <div className="profile-label">Förnamn <span style={{ fontSize: 11, color: 'var(--td)', fontWeight: 400 }}>(valfritt)</span></div>
@@ -205,6 +247,58 @@ export default function Profile() {
                       }} />
                     </button>
                   </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  <div className="profile-field">
+                    <div className="profile-label">Stad</div>
+                    {editing ? (
+                      <select className="profile-input" value={city} onChange={e => setCity(e.target.value)}
+                        style={{ fontFamily: 'var(--f)', fontSize: 14 }}>
+                        <option value="">Välj stad...</option>
+                        {CITIES.map(c => <option key={c} value={c}>{c}</option>)}
+                      </select>
+                    ) : (
+                      <div className="profile-val">{city || 'Ej angivet'}</div>
+                    )}
+                  </div>
+                  <div className="profile-field">
+                    <div className="profile-label">Gym</div>
+                    {editing ? (
+                      <input type="text" className="profile-input" value={gym} onChange={e => setGym(e.target.value)} placeholder="T.ex. SATS Odenplan" />
+                    ) : (
+                      <div className="profile-val">{gym || 'Ej angivet'}</div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="profile-field">
+                  <div className="profile-label">Sporter <span style={{ fontSize: 11, color: 'var(--td)', fontWeight: 400 }}>(välj 1–5)</span></div>
+                  {editing ? (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                      {SPORTS.map(s => (
+                        <button key={s} onClick={() => toggleSport(s)} style={{
+                          padding: '6px 12px', borderRadius: 20, cursor: 'pointer', fontFamily: 'var(--f)', fontSize: 12, fontWeight: 500,
+                          background: sports.includes(s) ? 'rgba(255,69,0,0.15)' : 'var(--b)',
+                          border: sports.includes(s) ? '2px solid var(--a)' : '1px solid var(--br)',
+                          color: sports.includes(s) ? 'var(--a)' : 'var(--t)',
+                          opacity: !sports.includes(s) && sports.length >= 5 ? 0.4 : 1,
+                          transition: 'all 0.2s',
+                        }}>
+                          {s}
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                      {sports.length > 0 ? sports.map(s => (
+                        <span key={s} style={{
+                          padding: '4px 12px', borderRadius: 20, fontSize: 12, fontWeight: 600,
+                          background: 'rgba(255,69,0,0.1)', color: 'var(--a)', border: '1px solid rgba(255,69,0,0.2)',
+                        }}>{s}</span>
+                      )) : <div className="profile-val">Inga valda</div>}
+                    </div>
+                  )}
                 </div>
 
                 <div className="profile-field">

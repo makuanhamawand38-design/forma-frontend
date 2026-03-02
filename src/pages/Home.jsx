@@ -104,9 +104,9 @@ export default function Home() {
         <div className="section-inner">
           <div className="grid-3">
             {[
-              { ic: <Target />, t: "100% Personligt", d: "Anpassat efter dina mål, skador, kostrestriktioner och utrustning" },
-              { ic: <Zap size={32} />, t: "Klart på minuter", d: "Ditt program skapas och levereras direkt i din dashboard" },
-              { ic: <Trophy />, t: "Bevisade Resultat", d: "Progressiva program som blir svårare — du ser resultat varje vecka" }
+              { ic: <Zap size={32} />, t: "Dela träning", d: "Visa dina sporter, ditt gym och din progress för andra i communityt" },
+              { ic: <Target />, t: "Hitta partners", d: "Hitta träningspartners i din stad som delar dina mål och intressen" },
+              { ic: <Trophy />, t: "Tävla & Nå dina mål", d: "XP, achievements och leaderboards — tävla mot dig själv och andra" }
             ].map((f, i) => (
               <div key={i} className={`feature-card animate delay-${i + 1}`}>
                 <div className="feature-icon">{f.ic}</div>
