@@ -13,7 +13,7 @@ export default function Terms() {
         <p>FORMA ("vi", "oss", "vår") tillhandahåller personliga träningsprogram och kostscheman via webbplatsen formafitness.se. Genom att använda vår tjänst accepterar du dessa villkor.</p>
 
         <h2 style={{ fontSize: 20, fontWeight: 700, color: 'var(--t)', marginTop: 32, marginBottom: 12 }}>2. Tjänsten</h2>
-        <p>FORMA genererar skräddarsydda träningsprogram och kostscheman baserat på den information du anger. Programmen är skapade med hjälp av AI-teknik och är avsedda som generell vägledning — inte medicinsk rådgivning.</p>
+        <p>FORMA genererar skräddarsydda träningsprogram och kostscheman baserat på den information du anger. Programmen är skapade med hjälp av avancerad teknik och är avsedda som generell vägledning — inte medicinsk rådgivning.</p>
         <p style={{ marginTop: 8 }}>Vi rekommenderar att du konsulterar en läkare innan du påbörjar ett nytt tränings- eller kostprogram, särskilt om du har befintliga hälsotillstånd, skador eller allergier.</p>
 
         <h2 style={{ fontSize: 20, fontWeight: 700, color: 'var(--t)', marginTop: 32, marginBottom: 12 }}>3. Konto & Registrering</h2>
@@ -63,7 +63,7 @@ export default function Terms() {
         <p>Vi delar dina uppgifter med följande tredjeparter, enbart för att tillhandahålla tjänsten:</p>
         <p style={{ marginTop: 8, paddingLeft: 16 }}>
           • <strong style={{ color: 'var(--t)' }}>Stripe:</strong> Betalningshantering<br />
-          • <strong style={{ color: 'var(--t)' }}>OpenAI:</strong> AI-generering av program (anonymiserad data)<br />
+          • <strong style={{ color: 'var(--t)' }}>OpenAI:</strong> Generering av program (anonymiserad data)<br />
           • <strong style={{ color: 'var(--t)' }}>Google Analytics:</strong> Webbanalys
         </p>
 

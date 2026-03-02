@@ -25,10 +25,12 @@ const plans = [
     key: 'premium',
     name: 'Premium',
     price: 49,
+    yearlyPrice: 37,
     period: '/mån',
     description: 'Mer social funktionalitet',
     popular: false,
     productType: 'premium_monthly',
+    yearlyProductType: 'premium_yearly',
     features: [
       'Allt i Gratis',
       'Direktmeddelanden',
@@ -49,8 +51,8 @@ const plans = [
     yearlyProductType: 'pro_yearly',
     features: [
       'Allt i Premium',
-      'AI-träningsprogram',
-      'AI-kostschema',
+      'Personliga träningsprogram',
+      'Personliga kostscheman',
       'Byt övningar & måltider',
       'Exportera PDF',
     ],
@@ -112,7 +114,7 @@ export default function Pricing() {
             <span style={{ fontSize: 15, color: yearly ? 'var(--t)' : 'var(--ts)', fontWeight: yearly ? 600 : 400 }}>
               Årsvis
             </span>
-            {yearly && <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--suc)', background: 'rgba(34,197,94,0.15)', padding: '4px 10px', borderRadius: 999 }}>Spara 25%</span>}
+            {yearly && <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--suc)', background: 'rgba(34,197,94,0.15)', padding: '4px 10px', borderRadius: 999 }}>Billigare!</span>}
           </div>
 
           {/* Plan cards */}
@@ -121,6 +123,7 @@ export default function Pricing() {
               const isCurrentPlan = currentLevel === plan.key
               const isLowerPlan = levels[plan.key] < levels[currentLevel]
               const displayPrice = yearly && plan.yearlyPrice ? plan.yearlyPrice : plan.price
+              const savingsPercent = yearly && plan.yearlyPrice ? Math.round((1 - plan.yearlyPrice / plan.price) * 100) : 0
 
               return (
                 <div
@@ -160,9 +163,14 @@ export default function Pricing() {
                     <span style={{ fontSize: 42, fontWeight: 700 }}>{displayPrice}</span>
                     <span style={{ color: 'var(--ts)', fontSize: 16, marginLeft: 4 }}>kr{plan.period}</span>
                     {yearly && plan.yearlyPrice && (
-                      <div style={{ fontSize: 13, color: 'var(--ts)', marginTop: 4 }}>
-                        Faktureras {plan.yearlyPrice * 12} kr/år
-                      </div>
+                      <>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--suc)', background: 'rgba(34,197,94,0.15)', padding: '3px 8px', borderRadius: 999, marginLeft: 8 }}>
+                          Spara {savingsPercent}%
+                        </span>
+                        <div style={{ fontSize: 13, color: 'var(--ts)', marginTop: 4 }}>
+                          Faktureras {plan.yearlyPrice * 12} kr/år
+                        </div>
+                      </>
                     )}
                   </div>
 
