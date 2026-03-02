@@ -15,6 +15,7 @@ import Profile from './pages/Profile'
 import UserProfile from './pages/UserProfile'
 import Terms from './pages/Terms'
 import Pricing from './pages/Pricing'
+import Competitions from './pages/Competitions'
 import CookieConsent from './components/CookieConsent'
 
 function ProtectedRoute({ children }) {
@@ -41,6 +42,7 @@ export default function App() {
       <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
       <Route path="/user/:username" element={<UserProfile />} />
       <Route path="/pricing" element={<Pricing />} />
+      <Route path="/competitions" element={<ProtectedRoute><Competitions /></ProtectedRoute>} />
       <Route path="/villkor" element={<Terms />} />
       <Route path="*" element={<NotFound />} />
     </Routes>

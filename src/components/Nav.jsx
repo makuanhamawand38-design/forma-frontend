@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { Zap, Grid, LogOut } from './Icons'
+import { Zap, Grid, LogOut, Trophy } from './Icons'
 
 export default function Nav() {
   const { user, logout } = useAuth()
@@ -27,6 +27,7 @@ export default function Nav() {
                 <Link to="/feed"><button className={`nav-btn ${path === '/feed' ? 'active' : ''}`}>Flöde</button></Link>
                 <Link to="/explore"><button className={`nav-btn ${path === '/explore' ? 'active' : ''}`}>Utforska</button></Link>
                 <Link to="/dashboard"><button className={`nav-btn ${path === '/dashboard' ? 'active' : ''}`}><Grid size={16} />Dashboard</button></Link>
+                <Link to="/competitions"><button className={`nav-btn ${path === '/competitions' ? 'active' : ''}`}><Trophy size={16} />Tävlingar</button></Link>
                 {(!user.subscription_type || user.subscription_type === 'free') && (
                   <Link to="/pricing"><button className="nav-btn-primary" style={{ padding: '6px 16px', fontSize: 13 }}><Zap size={14} />Uppgradera</button></Link>
                 )}
@@ -88,6 +89,11 @@ export default function Nav() {
               <Link to="/dashboard" onClick={closeMenu} style={{ textDecoration: 'none' }}>
                 <div style={mobileLink(path === '/dashboard')}>
                   <Grid size={16} /> Dashboard
+                </div>
+              </Link>
+              <Link to="/competitions" onClick={closeMenu} style={{ textDecoration: 'none' }}>
+                <div style={mobileLink(path === '/competitions')}>
+                  <Trophy size={16} /> Tävlingar
                 </div>
               </Link>
               {(!user.subscription_type || user.subscription_type === 'free') && (
