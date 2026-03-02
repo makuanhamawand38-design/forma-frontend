@@ -28,6 +28,8 @@ export default function Register() {
   const [email, setEmail] = useState('')
   const [pw, setPw] = useState('')
   const [pw2, setPw2] = useState('')
+  const [referralCode, setReferralCode] = useState('')
+  const [showReferral, setShowReferral] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const debounceRef = useRef(null)
@@ -79,7 +81,7 @@ export default function Register() {
     if (pw.length < 8) { setError('Lösenordet måste vara minst 8 tecken'); return }
     setLoading(true)
     try {
-      const data = await api.register(email, pw, username.trim().toLowerCase())
+      const data = await api.register(email, pw, username.trim().toLowerCase(), referralCode.trim() || undefined)
       login(data.token, data.email)
       nav('/feed')
     } catch (err) {
@@ -156,6 +158,27 @@ export default function Register() {
             <div className="auth-field"><label className="auth-label">E-postadress</label><input type="email" className="auth-input" placeholder="din@email.com" value={email} onChange={e => setEmail(e.target.value)} required /></div>
             <div className="auth-field"><label className="auth-label">Lösenord</label><input type="password" className="auth-input" placeholder="Minst 8 tecken" value={pw} onChange={e => setPw(e.target.value)} required /></div>
             <div className="auth-field"><label className="auth-label">Bekräfta lösenord</label><input type="password" className="auth-input" placeholder="Upprepa lösenord" value={pw2} onChange={e => setPw2(e.target.value)} required /></div>
+            {!showReferral ? (
+              <button type="button" onClick={() => setShowReferral(true)} style={{
+                background: 'none', border: 'none', color: 'var(--a)', fontSize: 13, fontWeight: 600,
+                cursor: 'pointer', fontFamily: 'var(--f)', padding: '4px 0', marginBottom: 8,
+              }}>
+                Har du en inbjudningskod?
+              </button>
+            ) : (
+              <div className="auth-field">
+                <label className="auth-label">Inbjudningskod <span style={{ fontSize: 11, color: 'var(--td)', fontWeight: 400 }}>(valfritt)</span></label>
+                <input
+                  type="text"
+                  className="auth-input"
+                  placeholder="T.ex. ABC12345"
+                  value={referralCode}
+                  onChange={e => setReferralCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))}
+                  maxLength={8}
+                  autoComplete="off"
+                />
+              </div>
+            )}
             <button className="auth-btn" type="submit" disabled={loading || usernameStatus !== 'available'}>{loading ? <span className="spinner" /> : 'Skapa konto'}</button>
           </form>
           <div className="auth-link">Har du redan ett konto? <Link to="/login">Logga in</Link></div>
