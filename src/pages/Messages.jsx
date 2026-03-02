@@ -217,14 +217,18 @@ export default function Messages() {
                     borderLeft: activeConv === conv.id ? '3px solid var(--a)' : '3px solid transparent',
                   }}
                 >
-                  <div style={{
-                    width: 44, height: 44, borderRadius: '50%', flexShrink: 0,
-                    background: avatarGradient(conv.username),
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 18, fontWeight: 700, color: '#fff',
-                  }}>
-                    {conv.username?.[0]?.toUpperCase() || '?'}
-                  </div>
+                  {conv.avatar_url ? (
+                    <img src={conv.avatar_url} alt="" style={{ width: 44, height: 44, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
+                  ) : (
+                    <div style={{
+                      width: 44, height: 44, borderRadius: '50%', flexShrink: 0,
+                      background: avatarGradient(conv.username),
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 18, fontWeight: 700, color: '#fff',
+                    }}>
+                      {conv.username?.[0]?.toUpperCase() || '?'}
+                    </div>
+                  )}
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
                       <span style={{ fontSize: 14, fontWeight: conv.unread_count > 0 ? 700 : 500, color: 'var(--t)' }}>
@@ -276,14 +280,18 @@ export default function Messages() {
               </button>
               {otherUser && (
                 <>
-                  <div style={{
-                    width: 36, height: 36, borderRadius: '50%', flexShrink: 0,
-                    background: avatarGradient(otherUser.username),
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 14, fontWeight: 700, color: '#fff',
-                  }}>
-                    {otherUser.username?.[0]?.toUpperCase() || '?'}
-                  </div>
+                  {otherUser.avatar_url ? (
+                    <img src={otherUser.avatar_url} alt="" style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
+                  ) : (
+                    <div style={{
+                      width: 36, height: 36, borderRadius: '50%', flexShrink: 0,
+                      background: avatarGradient(otherUser.username),
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 14, fontWeight: 700, color: '#fff',
+                    }}>
+                      {otherUser.username?.[0]?.toUpperCase() || '?'}
+                    </div>
+                  )}
                   <div>
                     <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--t)' }}>@{otherUser.username}</div>
                     {otherUser.first_name && (

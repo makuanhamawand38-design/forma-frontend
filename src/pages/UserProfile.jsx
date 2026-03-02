@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { api } from '../api'
@@ -96,6 +96,10 @@ export default function UserProfile() {
   const [showMenu, setShowMenu] = useState(false)
   const [showReportModal, setShowReportModal] = useState(false)
   const [showBlockConfirm, setShowBlockConfirm] = useState(false)
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
+  const [uploadingCover, setUploadingCover] = useState(false)
+  const avatarRef = useRef(null)
+  const coverRef = useRef(null)
 
   const isOwn = user?.username === username
 
@@ -146,6 +150,28 @@ export default function UserProfile() {
     } catch (e) { alert(e.message) }
   }
 
+  const handleAvatarUpload = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploadingAvatar(true)
+    try {
+      const data = await api.uploadAvatar(file)
+      setProfile(p => ({ ...p, avatar_url: data.avatar_url }))
+    } catch (err) { alert(err.message) }
+    setUploadingAvatar(false)
+  }
+
+  const handleCoverUpload = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploadingCover(true)
+    try {
+      const data = await api.uploadCover(file)
+      setProfile(p => ({ ...p, cover_url: data.cover_url }))
+    } catch (err) { alert(err.message) }
+    setUploadingCover(false)
+  }
+
   const initial = profile?.username?.[0]?.toUpperCase() || '?'
   const locationParts = [profile?.city, profile?.gym].filter(Boolean)
 
@@ -176,17 +202,47 @@ export default function UserProfile() {
         ) : (
           <>
             {/* Cover */}
-            <div className="up-cover">
-              <div className="up-cover-pattern" />
+            <div className="up-cover" onClick={() => isOwn && coverRef.current?.click()} style={{ cursor: isOwn ? 'pointer' : 'default' }}>
+              {profile.cover_url ? (
+                <img src={profile.cover_url} alt="" className="up-cover-img" />
+              ) : (
+                <div className="up-cover-pattern" />
+              )}
               <div className="up-cover-fade" />
+              {isOwn && (
+                <>
+                  <input ref={coverRef} type="file" accept="image/*" hidden onChange={handleCoverUpload} />
+                  <div className="up-cover-edit">
+                    {uploadingCover ? <span className="spinner" style={{ width: 16, height: 16 }} /> : (
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                    )}
+                  </div>
+                </>
+              )}
             </div>
 
             {/* Profile content */}
             <div className="up-container">
               {/* Top section: avatar + info */}
               <div className="up-header">
-                <div className="up-avatar" style={{ background: avatarGradient(profile.username) }}>
-                  {initial}
+                <div className="up-avatar-wrap" onClick={() => isOwn && avatarRef.current?.click()} style={{ cursor: isOwn ? 'pointer' : 'default', position: 'relative' }}>
+                  {profile.avatar_url ? (
+                    <img src={profile.avatar_url} alt="" className="up-avatar" />
+                  ) : (
+                    <div className="up-avatar up-avatar-gradient" style={{ background: avatarGradient(profile.username) }}>
+                      {initial}
+                    </div>
+                  )}
+                  {isOwn && (
+                    <>
+                      <input ref={avatarRef} type="file" accept="image/*" hidden onChange={handleAvatarUpload} />
+                      <div className="up-avatar-edit">
+                        {uploadingAvatar ? <span className="spinner" style={{ width: 14, height: 14 }} /> : (
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                        )}
+                      </div>
+                    </>
+                  )}
                 </div>
 
                 <div className="up-info">
@@ -401,6 +457,10 @@ export default function UserProfile() {
           height: 180px;
           position: relative;
           background: linear-gradient(135deg, #1a1a2e 0%, #16213e 40%, #0f3460 70%, #1a1a2e 100%);
+          overflow: hidden;
+        }
+        .up-cover-img {
+          width: 100%; height: 100%; object-fit: cover;
         }
         .up-cover-pattern {
           position: absolute;
@@ -417,6 +477,12 @@ export default function UserProfile() {
           height: 80px;
           background: linear-gradient(to top, var(--b), transparent);
         }
+        .up-cover-edit {
+          position: absolute; top: 12px; right: 12px;
+          background: rgba(0,0,0,0.6); border-radius: 50%; width: 36px; height: 36px;
+          display: flex; align-items: center; justify-content: center;
+          color: #fff; z-index: 2;
+        }
 
         .up-container {
           max-width: 700px;
@@ -431,6 +497,7 @@ export default function UserProfile() {
           margin-top: -48px;
         }
 
+        .up-avatar-wrap { flex-shrink: 0; }
         .up-avatar {
           width: 140px;
           height: 140px;
@@ -444,6 +511,13 @@ export default function UserProfile() {
           color: #fff;
           flex-shrink: 0;
           box-shadow: 0 4px 24px rgba(0,0,0,0.5);
+          object-fit: cover;
+        }
+        .up-avatar-edit {
+          position: absolute; bottom: 4px; right: 4px;
+          background: rgba(0,0,0,0.7); border-radius: 50%; width: 32px; height: 32px;
+          display: flex; align-items: center; justify-content: center;
+          color: #fff;
         }
 
         .up-info {

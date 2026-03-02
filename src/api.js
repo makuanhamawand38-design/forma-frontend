@@ -58,8 +58,37 @@ export const api = {
   getFollowers: (username, limit = 20, offset = 0) => request(`/users/${encodeURIComponent(username)}/followers?limit=${limit}&offset=${offset}`),
   getFollowing: (username, limit = 20, offset = 0) => request(`/users/${encodeURIComponent(username)}/following?limit=${limit}&offset=${offset}`),
   getSuggestedUsers: () => request('/users/suggested'),
+  // Images
+  uploadAvatar: async (file) => {
+    const token = localStorage.getItem('forma_token')
+    const fd = new FormData()
+    fd.append('file', file)
+    const res = await fetch(`${API}/users/me/avatar`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: fd })
+    const data = await res.json()
+    if (!res.ok) throw new Error(data.detail || 'Kunde inte ladda upp')
+    return data
+  },
+  uploadCover: async (file) => {
+    const token = localStorage.getItem('forma_token')
+    const fd = new FormData()
+    fd.append('file', file)
+    const res = await fetch(`${API}/users/me/cover`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: fd })
+    const data = await res.json()
+    if (!res.ok) throw new Error(data.detail || 'Kunde inte ladda upp')
+    return data
+  },
   // Posts
-  createPost: (text, sport_tag) => request('/posts', { method: 'POST', body: JSON.stringify({ text, sport_tag: sport_tag || null }) }),
+  createPost: async (text, sport_tag, imageFiles = []) => {
+    const token = localStorage.getItem('forma_token')
+    const fd = new FormData()
+    fd.append('text', text)
+    if (sport_tag) fd.append('sport_tag', sport_tag)
+    imageFiles.forEach(f => fd.append('images', f))
+    const res = await fetch(`${API}/posts`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: fd })
+    const data = await res.json()
+    if (!res.ok) throw new Error(data.detail || 'Något gick fel')
+    return data
+  },
   getFeed: (limit = 20, offset = 0) => request(`/posts/feed?limit=${limit}&offset=${offset}`),
   getExplore: (limit = 20, offset = 0) => request(`/posts/explore?limit=${limit}&offset=${offset}`),
   getPost: (id) => request(`/posts/${id}`),
