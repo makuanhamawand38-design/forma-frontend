@@ -91,4 +91,9 @@ export const api = {
   },
   // Referrals
   getMyReferrals: () => request('/users/me/referrals'),
+  // Moderation
+  reportContent: (target_type, target_id, reason) => request('/moderation/reports', { method: 'POST', body: JSON.stringify({ target_type, target_id, reason }) }),
+  blockUser: (username) => request(`/moderation/users/${encodeURIComponent(username)}/block`, { method: 'POST' }),
+  unblockUser: (username) => request(`/moderation/users/${encodeURIComponent(username)}/block`, { method: 'DELETE' }),
+  getBlockedUsers: () => request('/moderation/users/me/blocked'),
 }

@@ -87,12 +87,66 @@ function CommentSection({ postId }) {
   )
 }
 
-function PostCard({ post }) {
+const REPORT_REASONS = [
+  { value: 'spam', label: 'Spam' },
+  { value: 'inappropriate', label: 'Olämpligt innehåll' },
+  { value: 'harassment', label: 'Trakasserier' },
+  { value: 'other', label: 'Annat' },
+]
+
+function ReportModal({ onClose, onReport }) {
+  return (
+    <div className="mod-overlay" onClick={onClose}>
+      <div className="mod-modal" onClick={e => e.stopPropagation()}>
+        <div className="mod-header">
+          <h3 className="mod-title">Rapportera</h3>
+          <button className="mod-close" onClick={onClose}>✕</button>
+        </div>
+        <div className="mod-body">
+          <p className="mod-text">Välj en anledning:</p>
+          {REPORT_REASONS.map(r => (
+            <button key={r.value} className="mod-reason-btn" onClick={() => onReport(r.value)}>
+              {r.label}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function ConfirmBlockModal({ username, onClose, onConfirm }) {
+  return (
+    <div className="mod-overlay" onClick={onClose}>
+      <div className="mod-modal" onClick={e => e.stopPropagation()}>
+        <div className="mod-header">
+          <h3 className="mod-title">Blockera @{username}?</h3>
+          <button className="mod-close" onClick={onClose}>✕</button>
+        </div>
+        <div className="mod-body">
+          <p className="mod-text">
+            Blockerade användare kan inte se dina inlägg, följa dig eller skicka meddelanden.
+            Du kan avblockera när som helst.
+          </p>
+          <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+            <button className="mod-btn-cancel" onClick={onClose}>Avbryt</button>
+            <button className="mod-btn-block" onClick={onConfirm}>Blockera</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function PostCard({ post, onBlock }) {
   const { user } = useAuth()
   const nav = useNavigate()
   const [liked, setLiked] = useState(post.is_liked)
   const [likesCount, setLikesCount] = useState(post.likes_count)
   const [showComments, setShowComments] = useState(false)
+  const [showMenu, setShowMenu] = useState(false)
+  const [showReportModal, setShowReportModal] = useState(false)
+  const [showBlockConfirm, setShowBlockConfirm] = useState(false)
 
   const handleLike = async () => {
     if (!user) return nav('/login')
@@ -105,6 +159,24 @@ function PostCard({ post }) {
     }
   }
 
+  const handleReport = async (reason) => {
+    try {
+      await api.reportContent('post', post.id, reason)
+      alert('Rapporten har skickats')
+    } catch (e) { alert(e.message) }
+    setShowReportModal(false)
+  }
+
+  const handleBlock = async () => {
+    try {
+      await api.blockUser(post.user.username)
+      setShowBlockConfirm(false)
+      if (onBlock) onBlock(post.user.username)
+    } catch (e) { alert(e.message) }
+  }
+
+  const isOwn = user?.username === post.user.username
+
   return (
     <div className="pc-card">
       <div className="pc-header">
@@ -115,7 +187,27 @@ function PostCard({ post }) {
           <span className="pc-username" onClick={() => nav(`/user/${post.user.username}`)}>@{post.user.username}</span>
           <span className="pc-time">{timeAgo(post.created_at)}</span>
         </div>
+        {user && (
+          <div style={{ position: 'relative' }}>
+            <button className="pc-menu-btn" onClick={() => setShowMenu(!showMenu)}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+            </button>
+            {showMenu && (
+              <div className="pc-dropdown" onClick={() => setShowMenu(false)}>
+                {!isOwn && (
+                  <>
+                    <button className="pc-dropdown-item" onClick={() => setShowReportModal(true)}>Rapportera</button>
+                    <button className="pc-dropdown-item pc-dropdown-danger" onClick={() => setShowBlockConfirm(true)}>Blockera @{post.user.username}</button>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </div>
+
+      {showReportModal && <ReportModal onClose={() => setShowReportModal(false)} onReport={handleReport} />}
+      {showBlockConfirm && <ConfirmBlockModal username={post.user.username} onClose={() => setShowBlockConfirm(false)} onConfirm={handleBlock} />}
       <div className="pc-text">{post.text}</div>
       {post.sport_tag && <span className="pc-sport">{post.sport_tag}</span>}
       <div className="pc-actions">
@@ -189,7 +281,7 @@ export default function Explore() {
             </div>
           ) : (
             <>
-              {posts.map(p => <PostCard key={p.id} post={p} />)}
+              {posts.map(p => <PostCard key={p.id} post={p} onBlock={(username) => setPosts(prev => prev.filter(x => x.user.username !== username))} />)}
               <div ref={sentinelRef} style={{ height: 1 }} />
               {loadingMore && (
                 <div style={{ textAlign: 'center', padding: 20 }}>
@@ -230,6 +322,26 @@ export default function Explore() {
         .cs-input:focus { border-color: var(--a); }
         .cs-send { background: var(--a); border: none; color: #fff; width: 34px; height: 34px; border-radius: 50%; font-size: 16px; cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
         .cs-send:disabled { opacity: 0.4; cursor: default; }
+        .pc-menu-btn { background: none; border: none; color: var(--td); cursor: pointer; padding: 4px; border-radius: 4px; }
+        .pc-menu-btn:hover { color: var(--t); }
+        .pc-dropdown { position: absolute; right: 0; top: 28px; z-index: 50; background: var(--c); border: 1px solid var(--br); border-radius: 10px; min-width: 180px; box-shadow: 0 8px 24px rgba(0,0,0,0.4); overflow: hidden; }
+        .pc-dropdown-item { display: block; width: 100%; padding: 10px 16px; text-align: left; background: none; border: none; font-family: var(--f); font-size: 13px; font-weight: 500; color: var(--t); cursor: pointer; }
+        .pc-dropdown-item:hover { background: var(--s); }
+        .pc-dropdown-danger { color: #ef4444; }
+        .pc-dropdown-danger:hover { background: rgba(239,68,68,0.08); }
+        .mod-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
+        .mod-modal { background: var(--c); border: 1px solid var(--br); border-radius: 16px; width: 100%; max-width: 380px; overflow: hidden; }
+        .mod-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--br); }
+        .mod-title { margin: 0; font-size: 16px; font-weight: 700; color: var(--t); }
+        .mod-close { background: none; border: none; color: var(--ts); font-size: 18px; cursor: pointer; padding: 4px 8px; }
+        .mod-close:hover { color: var(--t); }
+        .mod-body { padding: 16px 20px; }
+        .mod-text { font-size: 14px; color: var(--ts); line-height: 1.6; margin: 0 0 12px; }
+        .mod-reason-btn { display: block; width: 100%; padding: 10px 14px; margin-bottom: 6px; background: var(--s); border: 1px solid var(--br); border-radius: 8px; font-family: var(--f); font-size: 13px; font-weight: 500; color: var(--t); cursor: pointer; text-align: left; transition: border-color 0.15s; }
+        .mod-reason-btn:hover { border-color: var(--a); }
+        .mod-btn-cancel { flex: 1; padding: 10px; border-radius: 8px; font-family: var(--f); font-size: 14px; font-weight: 600; background: var(--s); border: 1px solid var(--br); color: var(--t); cursor: pointer; }
+        .mod-btn-block { flex: 1; padding: 10px; border-radius: 8px; font-family: var(--f); font-size: 14px; font-weight: 600; background: #ef4444; border: none; color: #fff; cursor: pointer; }
+        .mod-btn-block:hover { background: #dc2626; }
       `}</style>
     </div>
   )
