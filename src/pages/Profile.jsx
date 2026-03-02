@@ -1,8 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { api } from '../api'
 import Nav from '../components/Nav'
 import { Zap } from '../components/Icons'
+
+const USERNAME_RE = /^[a-z0-9_]{3,20}$/
 
 const GOALS = [
   { id: "muscle", label: "Bygga muskler" },
@@ -73,6 +75,13 @@ export default function Profile() {
   const [allergies, setAllergies] = useState('')
   const [preferences, setPreferences] = useState('')
   const [displayNamePublic, setDisplayNamePublic] = useState(false)
+  const [usernameInput, setUsernameInput] = useState('')
+  const [usernameStatus, setUsernameStatus] = useState('idle')
+  const [usernameHint, setUsernameHint] = useState('')
+  const [editingUsername, setEditingUsername] = useState(false)
+  const [savingUsername, setSavingUsername] = useState(false)
+  const [usernameChangedAt, setUsernameChangedAt] = useState(null)
+  const debounceRef = useRef(null)
   const [bio, setBio] = useState('')
   const [city, setCity] = useState('')
   const [gym, setGym] = useState('')
@@ -84,6 +93,7 @@ export default function Profile() {
       setFirstName(p.first_name || '')
       setLastName(p.last_name || '')
       setDisplayNamePublic(p.display_name_public || false)
+      setUsernameChangedAt(p.username_changed_at || null)
       setBio(p.bio || '')
       setCity(p.city || '')
       setGym(p.gym || '')
@@ -111,6 +121,60 @@ export default function Profile() {
     } else if (sports.length < 5) {
       setSports([...sports, s])
     }
+  }
+
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    const v = usernameInput.trim().toLowerCase()
+    if (!v) { setUsernameStatus('idle'); setUsernameHint(''); return }
+    if (!USERNAME_RE.test(v)) {
+      setUsernameStatus('invalid')
+      if (v.length < 3) setUsernameHint('Minst 3 tecken')
+      else if (v.length > 20) setUsernameHint('Max 20 tecken')
+      else setUsernameHint('Bara a–z, 0–9 och understreck')
+      return
+    }
+    if (profile?.username && v === profile.username) {
+      setUsernameStatus('idle'); setUsernameHint(''); return
+    }
+    setUsernameStatus('checking'); setUsernameHint('')
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const data = await api.checkUsername(v)
+        if (data.available) { setUsernameStatus('available'); setUsernameHint('@' + v + ' är ledigt!') }
+        else { setUsernameStatus('taken'); setUsernameHint(data.reason || 'Redan taget') }
+      } catch { setUsernameStatus('idle'); setUsernameHint('') }
+    }, 400)
+    return () => clearTimeout(debounceRef.current)
+  }, [usernameInput])
+
+  const canChangeUsername = () => {
+    if (!usernameChangedAt) return true
+    const next = new Date(usernameChangedAt)
+    next.setDate(next.getDate() + 30)
+    return new Date() >= next
+  }
+
+  const nextUsernameChangeDate = () => {
+    if (!usernameChangedAt) return null
+    const next = new Date(usernameChangedAt)
+    next.setDate(next.getDate() + 30)
+    return next.toLocaleDateString('sv-SE')
+  }
+
+  const saveUsername = async () => {
+    setSavingUsername(true)
+    try {
+      const res = await api.setUsername(usernameInput.trim().toLowerCase())
+      const p = await api.getProfile()
+      setProfile(p)
+      setUsernameChangedAt(p.username_changed_at)
+      setEditingUsername(false)
+      setUsernameInput('')
+      setUsernameStatus('idle')
+      setUsernameHint('')
+    } catch (err) { alert(err.message) }
+    setSavingUsername(false)
   }
 
   const save = async () => {
@@ -189,12 +253,103 @@ export default function Profile() {
               <div className="profile-card" style={{ marginBottom: 24 }}>
                 <h3>Personlig info</h3>
 
-                {profile.username && (
-                  <div className="profile-field">
-                    <div className="profile-label">Användarnamn</div>
-                    <div className="profile-val" style={{ color: 'var(--a)', fontWeight: 600 }}>@{profile.username}</div>
-                  </div>
-                )}
+                <div className="profile-field">
+                  <div className="profile-label">Användarnamn</div>
+                  {!profile.username || editingUsername ? (
+                    <div>
+                      <div style={{ position: 'relative' }}>
+                        <span style={{
+                          position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)',
+                          color: 'var(--a)', fontWeight: 700, fontSize: 16, pointerEvents: 'none',
+                        }}>@</span>
+                        <input
+                          type="text"
+                          className="profile-input"
+                          style={{
+                            paddingLeft: 30, paddingRight: 44,
+                            borderColor:
+                              usernameStatus === 'available' ? '#22c55e' :
+                              (usernameStatus === 'taken' || usernameStatus === 'invalid') ? '#ef4444' : undefined,
+                          }}
+                          placeholder="ditt_namn"
+                          value={usernameInput}
+                          onChange={e => setUsernameInput(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+                          maxLength={20}
+                          autoComplete="off"
+                          autoCapitalize="none"
+                          spellCheck={false}
+                        />
+                        {['checking', 'available', 'taken'].includes(usernameStatus) && (
+                          <span style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center' }}>
+                            {usernameStatus === 'checking' && <span style={{
+                              display: 'inline-block', width: 16, height: 16,
+                              border: '2px solid rgba(255,255,255,0.2)', borderTopColor: 'var(--a)',
+                              borderRadius: '50%', animation: 'spin .7s linear infinite',
+                            }} />}
+                            {usernameStatus === 'available' && (
+                              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="3"><path d="M20 6 9 17l-5-5" /></svg>
+                            )}
+                            {usernameStatus === 'taken' && (
+                              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="3"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                            )}
+                          </span>
+                        )}
+                      </div>
+                      {usernameHint && (
+                        <p style={{
+                          fontSize: 13, marginTop: 6, marginBottom: 0,
+                          color: usernameStatus === 'available' ? '#22c55e' : usernameStatus === 'taken' || usernameStatus === 'invalid' ? '#ef4444' : 'var(--ts)',
+                        }}>{usernameHint}</p>
+                      )}
+                      <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                        <button
+                          onClick={saveUsername}
+                          disabled={savingUsername || usernameStatus !== 'available'}
+                          style={{
+                            padding: '8px 20px', borderRadius: 8, cursor: usernameStatus === 'available' ? 'pointer' : 'default',
+                            fontFamily: 'var(--f)', fontSize: 13, fontWeight: 600,
+                            background: usernameStatus === 'available' ? 'var(--a)' : 'var(--br)', border: 'none', color: '#fff',
+                            opacity: usernameStatus === 'available' ? 1 : 0.5,
+                          }}
+                        >
+                          {savingUsername ? 'Sparar...' : 'Spara användarnamn'}
+                        </button>
+                        {profile.username && (
+                          <button
+                            onClick={() => { setEditingUsername(false); setUsernameInput(''); setUsernameStatus('idle'); setUsernameHint('') }}
+                            style={{
+                              padding: '8px 16px', borderRadius: 8, cursor: 'pointer',
+                              fontFamily: 'var(--f)', fontSize: 13, fontWeight: 500,
+                              background: 'none', border: '1px solid var(--br)', color: 'var(--ts)',
+                            }}
+                          >
+                            Avbryt
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <div className="profile-val" style={{ color: 'var(--a)', fontWeight: 600, margin: 0 }}>@{profile.username}</div>
+                      {canChangeUsername() ? (
+                        <button
+                          onClick={() => setEditingUsername(true)}
+                          style={{
+                            padding: '4px 12px', borderRadius: 6, cursor: 'pointer',
+                            fontFamily: 'var(--f)', fontSize: 12, fontWeight: 500,
+                            background: 'none', border: '1px solid var(--br)', color: 'var(--ts)',
+                          }}
+                        >
+                          Byt användarnamn
+                        </button>
+                      ) : (
+                        <span style={{ fontSize: 12, color: 'var(--td)' }}>
+                          Kan bytas {nextUsernameChangeDate()}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
 
                 <div className="profile-field">
                   <div className="profile-label">Bio <span style={{ fontSize: 11, color: 'var(--td)', fontWeight: 400 }}>({bio.length}/150)</span></div>
