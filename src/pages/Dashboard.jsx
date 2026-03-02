@@ -49,7 +49,7 @@ export default function Dashboard() {
     }
   }
 
-  const greeting = profile?.first_name || user?.email?.split('@')[0] || ''
+  const greeting = profile?.username ? `@${profile.username}` : profile?.first_name || ''
   const isPro = profile?.subscription_status === 'active'
   const isCancelling = profile?.subscription_cancel_at_period_end
 

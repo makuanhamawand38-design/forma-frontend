@@ -38,7 +38,7 @@ export default function Login() {
         <div className="auth-box">
           <div className="auth-icon"><Lock size={32} /></div>
           <h1 className="auth-title">Välkommen tillbaka</h1>
-          <p className="auth-sub">Logga in för att komma åt dina program</p>
+          <p className="auth-sub">Logga in på ditt konto</p>
           {error && <div className="auth-error">{error}</div>}
           <form onSubmit={handleSubmit}>
             <div className="auth-field"><label className="auth-label">E-post eller användarnamn</label><input type="text" className="auth-input" placeholder="din@email.com eller användarnamn" value={identifier} onChange={e => setIdentifier(e.target.value)} required /></div>
