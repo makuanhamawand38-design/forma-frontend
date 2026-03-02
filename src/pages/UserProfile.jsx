@@ -23,25 +23,115 @@ function avatarGradient(username) {
   return `linear-gradient(135deg, ${pair[0]}, ${pair[1]})`
 }
 
+function FollowListModal({ username, type, onClose }) {
+  const [items, setItems] = useState([])
+  const [total, setTotal] = useState(0)
+  const [loading, setLoading] = useState(true)
+  const nav = useNavigate()
+
+  const title = type === 'followers' ? 'Följare' : 'Följer'
+
+  useEffect(() => {
+    const fetch = type === 'followers' ? api.getFollowers : api.getFollowing
+    fetch(username, 50, 0)
+      .then(data => {
+        setItems(data[type] || [])
+        setTotal(data.total || 0)
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [username, type])
+
+  return (
+    <div className="flm-overlay" onClick={onClose}>
+      <div className="flm-modal" onClick={e => e.stopPropagation()}>
+        <div className="flm-header">
+          <h3 className="flm-title">{title}</h3>
+          <button className="flm-close" onClick={onClose}>✕</button>
+        </div>
+        <div className="flm-body">
+          {loading ? (
+            <div style={{ textAlign: 'center', padding: 32 }}>
+              <span className="spinner" style={{ width: 24, height: 24 }} />
+            </div>
+          ) : items.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: 32, color: 'var(--td)', fontSize: 14 }}>
+              {type === 'followers' ? 'Inga följare ännu' : 'Följer ingen ännu'}
+            </div>
+          ) : (
+            items.map((u, i) => (
+              <div key={i} className="flm-item" onClick={() => { onClose(); nav(`/user/${u.username}`) }}>
+                <div className="flm-avatar" style={{ background: avatarGradient(u.username) }}>
+                  {u.username?.[0]?.toUpperCase() || '?'}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div className="flm-username">@{u.username}</div>
+                  {u.city && <div className="flm-city">{u.city}</div>}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function UserProfile() {
   const { username } = useParams()
   const { user } = useAuth()
   const nav = useNavigate()
   const [profile, setProfile] = useState(null)
   const [error, setError] = useState(null)
+  const [following, setFollowing] = useState(false)
+  const [followLoading, setFollowLoading] = useState(false)
+  const [modal, setModal] = useState(null)
 
   const isOwn = user?.username === username
 
   useEffect(() => {
     setProfile(null)
     setError(null)
+    setFollowing(false)
     api.getPublicProfile(username)
-      .then(setProfile)
+      .then(p => {
+        setProfile(p)
+        setFollowing(p.is_following || false)
+      })
       .catch(() => setError('Användaren hittades inte'))
   }, [username])
 
+  const handleFollow = async () => {
+    if (!user) return nav('/login')
+    setFollowLoading(true)
+    try {
+      if (following) {
+        await api.unfollowUser(username)
+        setFollowing(false)
+        setProfile(p => ({ ...p, followers_count: Math.max(0, (p.followers_count || 0) - 1) }))
+      } else {
+        await api.followUser(username)
+        setFollowing(true)
+        setProfile(p => ({ ...p, followers_count: (p.followers_count || 0) + 1 }))
+      }
+    } catch (err) {
+      // silently ignore (e.g. already following)
+    }
+    setFollowLoading(false)
+  }
+
   const initial = profile?.username?.[0]?.toUpperCase() || '?'
   const locationParts = [profile?.city, profile?.gym].filter(Boolean)
+
+  const followBtn = (
+    <button
+      className={following ? 'up-btn-following' : 'up-btn-follow'}
+      onClick={handleFollow}
+      disabled={followLoading}
+    >
+      {followLoading ? <span className="spinner" style={{ width: 16, height: 16 }} /> : following ? 'Följer' : 'Följ'}
+    </button>
+  )
 
   return (
     <div>
@@ -98,17 +188,15 @@ export default function UserProfile() {
                   {/* Stats - desktop (inline) */}
                   <div className="up-stats-inline">
                     <span><strong>{profile.posts_count}</strong> inlägg</span>
-                    <span><strong>{profile.followers_count}</strong> följare</span>
-                    <span><strong>{profile.following_count}</strong> följer</span>
+                    <span className="up-stat-clickable" onClick={() => setModal('followers')}><strong>{profile.followers_count}</strong> följare</span>
+                    <span className="up-stat-clickable" onClick={() => setModal('following')}><strong>{profile.following_count}</strong> följer</span>
                   </div>
 
                   {/* Action button - desktop */}
                   <div className="up-action-desktop">
                     {isOwn ? (
                       <button className="up-btn-edit" onClick={() => nav('/profile')}>Redigera profil</button>
-                    ) : (
-                      <button className="up-btn-follow" disabled>Följ</button>
-                    )}
+                    ) : followBtn}
                   </div>
                 </div>
               </div>
@@ -116,11 +204,11 @@ export default function UserProfile() {
               {/* Stats - mobile (full width) */}
               <div className="up-stats-mobile">
                 {[
-                  { n: profile.posts_count, l: 'inlägg' },
-                  { n: profile.followers_count, l: 'följare' },
-                  { n: profile.following_count, l: 'följer' },
+                  { n: profile.posts_count, l: 'inlägg', click: null },
+                  { n: profile.followers_count, l: 'följare', click: () => setModal('followers') },
+                  { n: profile.following_count, l: 'följer', click: () => setModal('following') },
                 ].map((s, i) => (
-                  <div key={i} className="up-stat-cell">
+                  <div key={i} className={`up-stat-cell${s.click ? ' up-stat-clickable' : ''}`} onClick={s.click}>
                     <div className="up-stat-num">{s.n}</div>
                     <div className="up-stat-label">{s.l}</div>
                   </div>
@@ -131,9 +219,7 @@ export default function UserProfile() {
               <div className="up-action-mobile">
                 {isOwn ? (
                   <button className="up-btn-edit" onClick={() => nav('/profile')}>Redigera profil</button>
-                ) : (
-                  <button className="up-btn-follow" disabled>Följ</button>
-                )}
+                ) : followBtn}
               </div>
 
               {/* Bio */}
@@ -189,6 +275,8 @@ export default function UserProfile() {
           </>
         )}
       </div>
+
+      {modal && <FollowListModal username={username} type={modal} onClose={() => setModal(null)} />}
 
       <style>{`
         .up-cover {
@@ -302,6 +390,15 @@ export default function UserProfile() {
           font-weight: 700;
         }
 
+        .up-stat-clickable {
+          cursor: pointer;
+          transition: color 0.2s;
+        }
+        .up-stat-clickable:hover,
+        .up-stat-clickable:hover strong {
+          color: var(--a);
+        }
+
         .up-stats-mobile {
           display: none;
         }
@@ -338,8 +435,36 @@ export default function UserProfile() {
           background: var(--a);
           border: none;
           color: #fff;
-          cursor: not-allowed;
-          opacity: 0.5;
+          cursor: pointer;
+          transition: background 0.2s;
+        }
+        .up-btn-follow:hover {
+          background: var(--ah);
+        }
+        .up-btn-follow:disabled {
+          opacity: 0.6;
+          cursor: wait;
+        }
+
+        .up-btn-following {
+          padding: 8px 32px;
+          border-radius: 8px;
+          font-family: var(--f);
+          font-size: 14px;
+          font-weight: 600;
+          background: var(--c);
+          border: 1px solid var(--br);
+          color: var(--t);
+          cursor: pointer;
+          transition: border-color 0.2s, color 0.2s;
+        }
+        .up-btn-following:hover {
+          border-color: #ef4444;
+          color: #ef4444;
+        }
+        .up-btn-following:disabled {
+          opacity: 0.6;
+          cursor: wait;
         }
 
         .up-bio {
@@ -413,6 +538,88 @@ export default function UserProfile() {
           font-size: 15px;
         }
 
+        /* Follow list modal */
+        .flm-overlay {
+          position: fixed;
+          inset: 0;
+          background: rgba(0,0,0,0.6);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 1000;
+          padding: 20px;
+        }
+        .flm-modal {
+          background: var(--c);
+          border: 1px solid var(--br);
+          border-radius: 16px;
+          width: 100%;
+          max-width: 400px;
+          max-height: 70vh;
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
+        }
+        .flm-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 16px 20px;
+          border-bottom: 1px solid var(--br);
+        }
+        .flm-title {
+          margin: 0;
+          font-size: 16px;
+          font-weight: 700;
+          color: var(--t);
+        }
+        .flm-close {
+          background: none;
+          border: none;
+          color: var(--ts);
+          font-size: 18px;
+          cursor: pointer;
+          padding: 4px 8px;
+        }
+        .flm-close:hover { color: var(--t); }
+        .flm-body {
+          overflow-y: auto;
+          padding: 8px 0;
+        }
+        .flm-item {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 10px 20px;
+          cursor: pointer;
+          transition: background 0.15s;
+        }
+        .flm-item:hover {
+          background: var(--s);
+        }
+        .flm-avatar {
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 16px;
+          font-weight: 700;
+          color: #fff;
+          flex-shrink: 0;
+        }
+        .flm-username {
+          font-size: 14px;
+          font-weight: 600;
+          color: var(--t);
+        }
+        .flm-city {
+          font-size: 12px;
+          color: var(--td);
+          margin-top: 2px;
+        }
+
         @media (max-width: 600px) {
           .up-cover { height: 120px; }
 
@@ -475,7 +682,7 @@ export default function UserProfile() {
             justify-content: center;
             margin-top: 16px;
           }
-          .up-btn-edit, .up-btn-follow {
+          .up-btn-edit, .up-btn-follow, .up-btn-following {
             width: 100%;
           }
 

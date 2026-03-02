@@ -48,4 +48,9 @@ export const api = {
   getPublicProfile: (username) => request(`/users/profile/${encodeURIComponent(username)}`),
   checkUsername: (username) => request(`/users/username/check/${encodeURIComponent(username)}`),
   setUsername: (username) => request('/users/me/username', { method: 'PUT', body: JSON.stringify({ username }) }),
+  followUser: (username) => request(`/users/${encodeURIComponent(username)}/follow`, { method: 'POST' }),
+  unfollowUser: (username) => request(`/users/${encodeURIComponent(username)}/unfollow`, { method: 'DELETE' }),
+  getFollowers: (username, limit = 20, offset = 0) => request(`/users/${encodeURIComponent(username)}/followers?limit=${limit}&offset=${offset}`),
+  getFollowing: (username, limit = 20, offset = 0) => request(`/users/${encodeURIComponent(username)}/following?limit=${limit}&offset=${offset}`),
+  getSuggestedUsers: () => request('/users/suggested'),
 }
