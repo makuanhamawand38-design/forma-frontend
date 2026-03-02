@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { api } from '../api'
-import { Zap, Grid, LogOut, Trophy, Mail } from './Icons'
+import { Zap, Grid, LogOut, Trophy, Mail, Bell } from './Icons'
 
 export default function Nav() {
   const { user, logout } = useAuth()
@@ -10,7 +10,9 @@ export default function Nav() {
   const path = location.pathname
   const [menuOpen, setMenuOpen] = useState(false)
   const [unreadCount, setUnreadCount] = useState(0)
+  const [notifCount, setNotifCount] = useState(0)
   const pollRef = useRef(null)
+  const notifPollRef = useRef(null)
 
   const isPremium = user && user.subscription_type && user.subscription_type !== 'free'
 
@@ -23,6 +25,16 @@ export default function Nav() {
     pollRef.current = setInterval(fetchUnread, 15000)
     return () => clearInterval(pollRef.current)
   }, [isPremium])
+
+  useEffect(() => {
+    if (!user) return
+    const fetchNotifCount = () => {
+      api.getNotifUnreadCount().then(d => setNotifCount(d.unread_count || 0)).catch(() => {})
+    }
+    fetchNotifCount()
+    notifPollRef.current = setInterval(fetchNotifCount, 15000)
+    return () => clearInterval(notifPollRef.current)
+  }, [user])
 
   const closeMenu = () => setMenuOpen(false)
 
@@ -51,6 +63,16 @@ export default function Nav() {
                       background: 'var(--a)', color: '#fff', fontSize: 10, fontWeight: 700,
                       display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px',
                     }}>{unreadCount}</span>
+                  )}
+                </Link>
+                <Link to="/notifications" style={{ position: 'relative' }}>
+                  <button className={`nav-btn ${path === '/notifications' ? 'active' : ''}`}><Bell size={16} /></button>
+                  {notifCount > 0 && (
+                    <span style={{
+                      position: 'absolute', top: 2, right: 2, minWidth: 16, height: 16, borderRadius: 999,
+                      background: 'var(--a)', color: '#fff', fontSize: 10, fontWeight: 700,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px',
+                    }}>{notifCount}</span>
                   )}
                 </Link>
                 {(!user.subscription_type || user.subscription_type === 'free') && (
@@ -130,6 +152,18 @@ export default function Nav() {
                       background: 'var(--a)', color: '#fff', fontSize: 11, fontWeight: 700,
                       display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 6px',
                     }}>{unreadCount}</span>
+                  )}
+                </div>
+              </Link>
+              <Link to="/notifications" onClick={closeMenu} style={{ textDecoration: 'none' }}>
+                <div style={mobileLink(path === '/notifications')}>
+                  <Bell size={16} /> Notiser
+                  {notifCount > 0 && (
+                    <span style={{
+                      marginLeft: 'auto', minWidth: 20, height: 20, borderRadius: 999,
+                      background: 'var(--a)', color: '#fff', fontSize: 11, fontWeight: 700,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 6px',
+                    }}>{notifCount}</span>
                   )}
                 </div>
               </Link>

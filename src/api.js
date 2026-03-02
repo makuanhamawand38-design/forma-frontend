@@ -75,4 +75,8 @@ export const api = {
   getUnreadCount: () => request('/dm/conversations/unread-count'),
   getMessages: (conversationId, limit = 50, offset = 0) => request(`/dm/conversations/${conversationId}/messages?limit=${limit}&offset=${offset}`),
   sendMessage: (conversationId, text) => request(`/dm/conversations/${conversationId}/messages`, { method: 'POST', body: JSON.stringify({ text }) }),
+  // Notifications
+  getNotifications: (limit = 30, offset = 0) => request(`/notifications?limit=${limit}&offset=${offset}`),
+  markNotificationsRead: () => request('/notifications/read-all', { method: 'PUT' }),
+  getNotifUnreadCount: () => request('/notifications/unread-count'),
 }
