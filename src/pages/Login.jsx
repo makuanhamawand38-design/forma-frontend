@@ -49,8 +49,6 @@ export default function Login() {
             <button className="auth-btn" type="submit" disabled={loading}>{loading ? <span className="spinner" /> : 'Logga in'}</button>
           </form>
           <div className="auth-link">Har du inget konto? <Link to="/register">Skapa konto</Link></div>
-          <div className="auth-divider">eller</div>
-          <div className="auth-link"><Link to="/guest">Köp utan konto – få planen via mejl</Link></div>
         </div>
       </div>
     </div>

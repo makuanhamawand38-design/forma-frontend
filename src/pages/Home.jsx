@@ -1,17 +1,11 @@
-import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { api } from '../api'
 import Nav from '../components/Nav'
 import Footer from '../components/Footer'
-import { Zap, Chv, Star, Check, Target, Trophy, productIcon, catBg } from '../components/Icons'
+import { Zap, Chv, Star, Check, Target, Trophy } from '../components/Icons'
 
 const HERO_BG = "https://images.unsplash.com/photo-1770513649465-2c60c8039806?auto=format&fit=crop&w=1920&q=80"
-
-const ONE_TIME = [
-  { id: "training", name: "Träningsprogram", desc: "4 veckors skräddarsytt träningsschema med övningsinstruktioner.", price: 349, weeks: "4 veckor", feat: ["Personlig träningsplan", "Övningsbeskrivningar & coach-tips", "Progression vecka för vecka", "Hemma eller gym"], cat: "training" },
-  { id: "nutrition", name: "Kostschema", desc: "4 veckors matsedel med exakta gram, kalorier och inköpslistor.", price: 349, weeks: "4 veckor", feat: ["Veckomeny med exakta gram", "Inköpslista per vecka", "Kalorier & näringsvärden", "Meal prep-guide"], cat: "nutrition" },
-  { id: "bundle", name: "Träning + Kost", desc: "Komplett 8 veckors fitness-paket med träning och kostschema.", price: 799, weeks: "8 veckor", feat: ["Allt i ett paket", "8 veckors plan", "Övningsbeskrivningar", "Premium kostplan"], cat: "bundle" },
-]
 
 const REVIEWS = [
   { n: "Erik S.", t: "Äntligen ett program som faktiskt är anpassat för mig. Gick ner 8 kg på 6 veckor!", r: 5 },
@@ -37,10 +31,18 @@ const EXAMPLE_DAY = {
 export default function Home() {
   const nav = useNavigate()
   const { user } = useAuth()
-  const [pricingTab, setPricingTab] = useState('pro')
 
-  const handleBuy = (productId) => {
-    nav(`/onboarding?product=${productId}`)
+  const handleSubscribe = async (productId) => {
+    if (!user) {
+      nav('/register')
+      return
+    }
+    try {
+      const data = await api.createCheckout(productId)
+      window.location.href = data.checkout_url
+    } catch (err) {
+      alert(err.message)
+    }
   }
 
   return (
@@ -57,7 +59,7 @@ export default function Home() {
           <div className="hero-inner animate">
             <div className="badges"><span className="badge-orange">100% Skräddarsytt</span><span className="badge-muted">Över 500 nöjda kunder</span></div>
             <h1>Ditt personliga<span>träningsprogram</span></h1>
-            <p className="hero-desc">Professionella träningsprogram och kostplaner, helt anpassade efter dina mål, erfarenhet och förutsättningar. Klart på 3 minuter.</p>
+            <p className="hero-desc">Professionella träningsprogram och kostplaner, helt anpassade efter dina mål, erfarenhet och förutsättningar. Nytt program varje månad.</p>
             <div className="hero-buttons">
               <button className="btn-primary" onClick={() => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })}>Se priser <Chv /></button>
               <button className="btn-outline" onClick={() => document.getElementById('preview')?.scrollIntoView({ behavior: 'smooth' })}>Se exempel</button>
@@ -83,8 +85,8 @@ export default function Home() {
           </div>
           <div className="grid-3">
             {[
-              { s: "01", t: "Berätta om dig", d: "Fyll i dina mål, erfarenhet, skador och kostpreferenser. Vi anpassar allt.", i: "📋" },
-              { s: "02", t: "Välj & betala", d: "Välj engångsköp eller Pro-prenumeration. Betala säkert via kort eller Klarna.", i: "💳" },
+              { s: "01", t: "Skapa konto", d: "Registrera dig och fyll i din profil — mål, erfarenhet, skador och kostpreferenser.", i: "📋" },
+              { s: "02", t: "Starta Pro", d: "Välj månads- eller årsplan. Betala säkert med kort.", i: "💳" },
               { s: "03", t: "Få din plan", d: "Ditt helt unika program skapas på 1–3 minuter med övningsbeskrivningar och coach-tips.", i: "🎯" }
             ].map((x, i) => (
               <div key={i} className={`step-card animate delay-${i + 1}`}>
@@ -153,124 +155,49 @@ export default function Home() {
       {/* ===== PRICING ===== */}
       <section id="pricing" className="section">
         <div className="section-inner">
-          <div className="section-center" style={{ marginBottom: 32 }}>
+          <div className="section-center" style={{ marginBottom: 40 }}>
             <h2 className="section-title">Välj din plan</h2>
-            <p className="section-desc">Engångsköp eller prenumeration — du väljer</p>
+            <p className="section-desc">Nytt skräddarsytt program varje månad — träning och kost inkluderat</p>
           </div>
 
-          {/* Tabs */}
-          <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginBottom: 40 }}>
-            <button onClick={() => setPricingTab('pro')} style={{
-              padding: '10px 24px', borderRadius: 20, fontFamily: 'var(--f)', fontSize: 14, fontWeight: 600, cursor: 'pointer',
-              background: pricingTab === 'pro' ? 'var(--a)' : 'var(--b)', color: pricingTab === 'pro' ? '#fff' : 'var(--ts)',
-              border: pricingTab === 'pro' ? 'none' : '1px solid var(--br)',
-            }}>
-              ⭐ Pro-prenumeration
-            </button>
-            <button onClick={() => setPricingTab('onetime')} style={{
-              padding: '10px 24px', borderRadius: 20, fontFamily: 'var(--f)', fontSize: 14, fontWeight: 600, cursor: 'pointer',
-              background: pricingTab === 'onetime' ? 'var(--a)' : 'var(--b)', color: pricingTab === 'onetime' ? '#fff' : 'var(--ts)',
-              border: pricingTab === 'onetime' ? 'none' : '1px solid var(--br)',
-            }}>
-              Engångsköp
-            </button>
-          </div>
-
-          {/* Pro pricing */}
-          {pricingTab === 'pro' && (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 24, maxWidth: 700, margin: '0 auto' }}>
-              {/* Monthly */}
-              <div style={{ background: 'var(--b)', border: '1px solid var(--br)', borderRadius: 16, padding: 28, position: 'relative' }}>
-                <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--ts)', marginBottom: 4 }}>Månadsvis</div>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, marginBottom: 16 }}>
-                  <span style={{ fontSize: 40, fontWeight: 800, color: 'var(--t)' }}>199</span>
-                  <span style={{ fontSize: 16, color: 'var(--ts)' }}>kr/mån</span>
-                </div>
-                <div style={{ fontSize: 13, color: 'var(--td)', marginBottom: 20 }}>Avsluta när du vill</div>
-                {["Nytt program varje månad", "Träning + kost inkluderat", "Automatisk progression", "Viktloggning & progress", "Övningsbeskrivningar", "Coach-tips per övning"].map((f, i) => (
-                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, fontSize: 13, color: 'var(--ts)' }}>
-                    <Check size={16} /> {f}
-                  </div>
-                ))}
-                <button className="btn-primary" style={{ width: '100%', marginTop: 20, padding: '14px 0', textAlign: 'center' }} onClick={() => handleBuy('pro_monthly')}>
-                  Starta Pro
-                </button>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 24, maxWidth: 700, margin: '0 auto' }}>
+            {/* Monthly */}
+            <div style={{ background: 'var(--b)', border: '1px solid var(--br)', borderRadius: 16, padding: 28, position: 'relative' }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--ts)', marginBottom: 4 }}>Månadsvis</div>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, marginBottom: 16 }}>
+                <span style={{ fontSize: 40, fontWeight: 800, color: 'var(--t)' }}>199</span>
+                <span style={{ fontSize: 16, color: 'var(--ts)' }}>kr/mån</span>
               </div>
-
-              {/* Yearly */}
-              <div style={{ background: 'var(--b)', border: '2px solid var(--a)', borderRadius: 16, padding: 28, position: 'relative' }}>
-                <div style={{ position: 'absolute', top: -12, left: '50%', transform: 'translateX(-50%)', background: 'var(--a)', color: '#fff', padding: '4px 16px', borderRadius: 20, fontSize: 12, fontWeight: 700 }}>
-                  Spara 600 kr/år
-                </div>
-                <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--a)', marginBottom: 4 }}>Årsplan</div>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, marginBottom: 4 }}>
-                  <span style={{ fontSize: 40, fontWeight: 800, color: 'var(--t)' }}>149</span>
-                  <span style={{ fontSize: 16, color: 'var(--ts)' }}>kr/mån</span>
-                </div>
-                <div style={{ fontSize: 13, color: 'var(--td)', marginBottom: 20 }}>1 788 kr/år (faktureras årsvis)</div>
-                {["Allt i månadsplanen", "Spara 600 kr per år", "Nytt program varje månad", "Träning + kost inkluderat", "Automatisk progression", "Prioriterad support"].map((f, i) => (
-                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, fontSize: 13, color: 'var(--ts)' }}>
-                    <Check size={16} /> {f}
-                  </div>
-                ))}
-                <button className="btn-primary" style={{ width: '100%', marginTop: 20, padding: '14px 0', textAlign: 'center' }} onClick={() => handleBuy('pro_yearly')}>
-                  Starta Årsplan
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* One-time pricing */}
-          {pricingTab === 'onetime' && (
-            <div className="grid-3" style={{ marginTop: 0 }}>
-              {ONE_TIME.map((p, i) => (
-                <div key={p.id} className={`product-card animate delay-${i + 1} ${p.id === 'bundle' ? 'popular' : ''}`} onClick={() => handleBuy(p.id)}>
-                  {p.id === 'bundle' && <div className="popular-badge">Populärast</div>}
-                  <div className="product-img" style={{ background: catBg(p.cat) }}>
-                    <div className="product-img-overlay" />
-                    <div className="product-img-icon">{productIcon(p.cat)}</div>
-                  </div>
-                  <div className="product-body">
-                    <h3 className="product-name">{p.name}</h3>
-                    <p className="product-desc">{p.desc}</p>
-                    <div style={{ fontSize: 12, color: 'var(--a)', fontWeight: 600, marginBottom: 8 }}>{p.weeks}</div>
-                    <ul className="product-features">{p.feat.map((f, j) => <li key={j}><Star size={16} filled /> {f}</li>)}</ul>
-                    <div className="product-footer">
-                      <div className="product-price">{p.price}<span>SEK</span></div>
-                      <button className="btn-primary btn-sm" onClick={e => { e.stopPropagation(); handleBuy(p.id) }}>Välj</button>
-                    </div>
-                    <div style={{ marginTop: 12, display: 'flex', gap: 8, alignItems: 'center' }}>
-                      <span className="klarna-badge">Klarna.</span>
-                      <span style={{ fontSize: 12, color: 'var(--td)' }}>Kort & Klarna</span>
-                    </div>
-                  </div>
+              <div style={{ fontSize: 13, color: 'var(--td)', marginBottom: 20 }}>Avsluta när du vill</div>
+              {["Nytt program varje månad", "Träning + kost inkluderat", "Automatisk progression", "Viktloggning & progress", "Övningsbeskrivningar", "Coach-tips per övning"].map((f, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, fontSize: 13, color: 'var(--ts)' }}>
+                  <Check size={16} /> {f}
                 </div>
               ))}
+              <button className="btn-primary" style={{ width: '100%', marginTop: 20, padding: '14px 0', textAlign: 'center' }} onClick={() => handleSubscribe('pro_monthly')}>
+                Starta Pro
+              </button>
             </div>
-          )}
 
-          {/* Compare */}
-          <div style={{ maxWidth: 600, margin: '48px auto 0', background: 'var(--b)', border: '1px solid var(--br)', borderRadius: 16, padding: 24 }}>
-            <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--t)', marginBottom: 16, textAlign: 'center' }}>Varför välja Pro?</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '8px 16px', fontSize: 13 }}>
-              <div style={{ color: 'var(--ts)', fontWeight: 600 }}></div>
-              <div style={{ color: 'var(--td)', fontWeight: 600, textAlign: 'center' }}>Engångsköp</div>
-              <div style={{ color: 'var(--a)', fontWeight: 600, textAlign: 'center' }}>Pro</div>
-
-              {[
-                ["Personligt program", "✓", "✓"],
-                ["Övningsbeskrivningar", "✓", "✓"],
-                ["Nytt program varje månad", "✗", "✓"],
-                ["Automatisk progression", "✗", "✓"],
-                ["Träning + kost", "Separat", "Inkluderat"],
-                ["Pris per månad", "349+ kr", "149 kr"],
-              ].map(([label, basic, pro], i) => (
-                <div key={i} style={{ display: 'contents' }}>
-                  <div style={{ color: 'var(--ts)', padding: '6px 0', borderTop: i > 0 ? '1px solid var(--br)' : 'none' }}>{label}</div>
-                  <div style={{ textAlign: 'center', padding: '6px 0', borderTop: i > 0 ? '1px solid var(--br)' : 'none', color: basic === '✗' ? 'var(--td)' : 'var(--ts)' }}>{basic}</div>
-                  <div style={{ textAlign: 'center', padding: '6px 0', borderTop: i > 0 ? '1px solid var(--br)' : 'none', color: pro === '✓' || pro === 'Inkluderat' || pro === '149 kr' ? 'var(--a)' : 'var(--ts)', fontWeight: 600 }}>{pro}</div>
+            {/* Yearly */}
+            <div style={{ background: 'var(--b)', border: '2px solid var(--a)', borderRadius: 16, padding: 28, position: 'relative' }}>
+              <div style={{ position: 'absolute', top: -12, left: '50%', transform: 'translateX(-50%)', background: 'var(--a)', color: '#fff', padding: '4px 16px', borderRadius: 20, fontSize: 12, fontWeight: 700 }}>
+                Spara 600 kr/år
+              </div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--a)', marginBottom: 4 }}>Årsplan</div>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, marginBottom: 4 }}>
+                <span style={{ fontSize: 40, fontWeight: 800, color: 'var(--t)' }}>149</span>
+                <span style={{ fontSize: 16, color: 'var(--ts)' }}>kr/mån</span>
+              </div>
+              <div style={{ fontSize: 13, color: 'var(--td)', marginBottom: 20 }}>1 788 kr/år (faktureras årsvis)</div>
+              {["Allt i månadsplanen", "Spara 600 kr per år", "Nytt program varje månad", "Träning + kost inkluderat", "Automatisk progression", "Prioriterad support"].map((f, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, fontSize: 13, color: 'var(--ts)' }}>
+                  <Check size={16} /> {f}
                 </div>
               ))}
+              <button className="btn-primary" style={{ width: '100%', marginTop: 20, padding: '14px 0', textAlign: 'center' }} onClick={() => handleSubscribe('pro_yearly')}>
+                Starta Årsplan
+              </button>
             </div>
           </div>
         </div>
@@ -300,7 +227,7 @@ export default function Home() {
             <p style={{ fontSize: 15, color: 'var(--ts)', marginBottom: 32, lineHeight: 1.6 }}>
               Starta idag och få ditt personliga program på under 3 minuter. Ingen bindningstid.
             </p>
-            <button className="btn-primary" style={{ padding: '16px 40px', fontSize: 16 }} onClick={() => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })}>
+            <button className="btn-primary" style={{ padding: '16px 40px', fontSize: 16 }} onClick={() => handleSubscribe('pro_monthly')}>
               Kom igång nu <Chv />
             </button>
           </div>
