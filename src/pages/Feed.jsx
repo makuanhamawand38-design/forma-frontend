@@ -32,16 +32,67 @@ const SPORT_OPTIONS = ['Styrketräning', 'Löpning', 'Cykling', 'Simning', 'Yoga
 
 // ── Create Post Modal ──
 
+function Avatar({ username, avatarUrl, size = 36, fontSize = 14 }) {
+  if (avatarUrl) {
+    return <img src={avatarUrl} alt="" style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
+  }
+  return (
+    <div style={{ width: size, height: size, borderRadius: '50%', background: avatarGradient(username), display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize, fontWeight: 700, color: '#fff', flexShrink: 0 }}>
+      {(username || '?')[0].toUpperCase()}
+    </div>
+  )
+}
+
+function ImageCarousel({ images }) {
+  const [idx, setIdx] = useState(0)
+  if (!images || images.length === 0) return null
+  return (
+    <div className="pc-images">
+      <img src={images[idx]} alt="" className="pc-img" />
+      {images.length > 1 && (
+        <div className="pc-img-dots">
+          {images.map((_, i) => (
+            <span key={i} className={`pc-img-dot${i === idx ? ' active' : ''}`} onClick={() => setIdx(i)} />
+          ))}
+        </div>
+      )}
+      {images.length > 1 && idx > 0 && (
+        <button className="pc-img-nav pc-img-prev" onClick={() => setIdx(idx - 1)}>‹</button>
+      )}
+      {images.length > 1 && idx < images.length - 1 && (
+        <button className="pc-img-nav pc-img-next" onClick={() => setIdx(idx + 1)}>›</button>
+      )}
+    </div>
+  )
+}
+
 function CreatePostModal({ onClose, onCreated }) {
   const [text, setText] = useState('')
   const [sportTag, setSportTag] = useState('')
   const [posting, setPosting] = useState(false)
+  const [imageFiles, setImageFiles] = useState([])
+  const [previews, setPreviews] = useState([])
+  const fileRef = useRef(null)
+
+  const handleFiles = (e) => {
+    const files = Array.from(e.target.files || [])
+    const combined = [...imageFiles, ...files].slice(0, 10)
+    setImageFiles(combined)
+    setPreviews(combined.map(f => URL.createObjectURL(f)))
+  }
+
+  const removeImage = (i) => {
+    URL.revokeObjectURL(previews[i])
+    const newFiles = imageFiles.filter((_, idx) => idx !== i)
+    setImageFiles(newFiles)
+    setPreviews(newFiles.map(f => URL.createObjectURL(f)))
+  }
 
   const handleSubmit = async () => {
     if (!text.trim()) return
     setPosting(true)
     try {
-      const post = await api.createPost(text, sportTag || null)
+      const post = await api.createPost(text, sportTag || null, imageFiles)
       onCreated(post)
       onClose()
     } catch (err) {
@@ -67,6 +118,19 @@ function CreatePostModal({ onClose, onCreated }) {
             autoFocus
           />
           <div className="cpm-char-count">{text.length}/2000</div>
+
+          {/* Image previews */}
+          {previews.length > 0 && (
+            <div className="cpm-previews">
+              {previews.map((src, i) => (
+                <div key={i} className="cpm-preview-item">
+                  <img src={src} alt="" />
+                  <button className="cpm-preview-rm" onClick={() => removeImage(i)}>✕</button>
+                </div>
+              ))}
+            </div>
+          )}
+
           <div className="cpm-sport-label">Sport (valfritt)</div>
           <div className="cpm-sport-list">
             {SPORT_OPTIONS.map(s => (
@@ -77,6 +141,11 @@ function CreatePostModal({ onClose, onCreated }) {
           </div>
         </div>
         <div className="cpm-footer">
+          <input ref={fileRef} type="file" accept="image/*" multiple hidden onChange={handleFiles} />
+          <button className="cpm-img-btn" onClick={() => fileRef.current?.click()} disabled={imageFiles.length >= 10}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+            {imageFiles.length > 0 && <span style={{ fontSize: 12 }}>{imageFiles.length}/10</span>}
+          </button>
           <button className="cpm-btn-post" onClick={handleSubmit} disabled={!text.trim() || posting}>
             {posting ? <span className="spinner" style={{ width: 16, height: 16 }} /> : 'Publicera'}
           </button>
@@ -135,9 +204,7 @@ function CommentSection({ postId }) {
         <>
           {comments.map(c => (
             <div key={c.id} className="cs-comment">
-              <div className="cs-avatar" style={{ background: avatarGradient(c.user.username) }}>
-                {c.user.avatar_initial}
-              </div>
+              <Avatar username={c.user.username} avatarUrl={c.user.avatar_url} size={28} fontSize={11} />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <span className="cs-username">@{c.user.username}</span>
                 <span className="cs-text">{c.text}</span>
@@ -272,8 +339,8 @@ function PostCard({ post, onDelete, onBlock }) {
     <div className="pc-card">
       {/* Header */}
       <div className="pc-header">
-        <div className="pc-avatar" style={{ background: avatarGradient(post.user.username) }} onClick={() => nav(`/user/${post.user.username}`)}>
-          {post.user.avatar_initial}
+        <div className="pc-avatar-wrap" onClick={() => nav(`/user/${post.user.username}`)}>
+          <Avatar username={post.user.username} avatarUrl={post.user.avatar_url} size={36} fontSize={14} />
         </div>
         <div style={{ flex: 1 }}>
           <span className="pc-username" onClick={() => nav(`/user/${post.user.username}`)}>@{post.user.username}</span>
@@ -310,6 +377,7 @@ function PostCard({ post, onDelete, onBlock }) {
 
       {/* Body */}
       <div className="pc-text">{post.text}</div>
+      {post.images && post.images.length > 0 && <ImageCarousel images={post.images} />}
       {post.sport_tag && <span className="pc-sport">{post.sport_tag}</span>}
 
       {/* Actions */}
@@ -504,11 +572,7 @@ export default function Feed() {
           display: flex; align-items: center; gap: 10px;
           padding: 14px 16px 0;
         }
-        .pc-avatar {
-          width: 36px; height: 36px; border-radius: 50%;
-          display: flex; align-items: center; justify-content: center;
-          font-size: 14px; font-weight: 700; color: #fff; cursor: pointer; flex-shrink: 0;
-        }
+        .pc-avatar-wrap { cursor: pointer; flex-shrink: 0; }
         .pc-username {
           font-size: 14px; font-weight: 600; color: var(--t); cursor: pointer;
         }
@@ -671,6 +735,54 @@ export default function Feed() {
         }
         .cpm-btn-post:hover { background: var(--ah); }
         .cpm-btn-post:disabled { opacity: 0.5; cursor: default; }
+        .cpm-img-btn {
+          display: flex; align-items: center; gap: 6px;
+          background: none; border: 1px solid var(--br); border-radius: 10px;
+          padding: 8px 14px; color: var(--ts); cursor: pointer; font-family: var(--f);
+          margin-right: auto; transition: border-color 0.15s;
+        }
+        .cpm-img-btn:hover { border-color: var(--a); color: var(--a); }
+        .cpm-img-btn:disabled { opacity: 0.4; cursor: default; }
+        .cpm-previews {
+          display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px;
+        }
+        .cpm-preview-item {
+          position: relative; width: 72px; height: 72px; border-radius: 8px; overflow: hidden;
+        }
+        .cpm-preview-item img {
+          width: 100%; height: 100%; object-fit: cover;
+        }
+        .cpm-preview-rm {
+          position: absolute; top: 2px; right: 2px;
+          width: 20px; height: 20px; border-radius: 50%;
+          background: rgba(0,0,0,0.7); border: none; color: #fff;
+          font-size: 12px; cursor: pointer; display: flex;
+          align-items: center; justify-content: center;
+        }
+
+        /* Post images */
+        .pc-images { position: relative; }
+        .pc-img {
+          width: 100%; max-height: 500px; object-fit: cover;
+          display: block;
+        }
+        .pc-img-dots {
+          display: flex; gap: 6px; justify-content: center;
+          padding: 8px 0;
+        }
+        .pc-img-dot {
+          width: 6px; height: 6px; border-radius: 50%;
+          background: var(--br); cursor: pointer; transition: background 0.15s;
+        }
+        .pc-img-dot.active { background: var(--a); }
+        .pc-img-nav {
+          position: absolute; top: 50%; transform: translateY(-50%);
+          background: rgba(0,0,0,0.5); border: none; color: #fff;
+          width: 32px; height: 32px; border-radius: 50%; font-size: 18px;
+          cursor: pointer; display: flex; align-items: center; justify-content: center;
+        }
+        .pc-img-prev { left: 8px; }
+        .pc-img-next { right: 8px; }
 
         /* Moderation modals */
         .mod-overlay {

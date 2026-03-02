@@ -28,6 +28,40 @@ function timeAgo(dateStr) {
   return new Date(dateStr).toLocaleDateString('sv-SE', { day: 'numeric', month: 'short' })
 }
 
+function Avatar({ username, avatarUrl, size = 36, fontSize = 14 }) {
+  if (avatarUrl) {
+    return <img src={avatarUrl} alt="" style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
+  }
+  return (
+    <div style={{ width: size, height: size, borderRadius: '50%', background: avatarGradient(username), display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize, fontWeight: 700, color: '#fff', flexShrink: 0 }}>
+      {(username || '?')[0].toUpperCase()}
+    </div>
+  )
+}
+
+function ImageCarousel({ images }) {
+  const [idx, setIdx] = useState(0)
+  if (!images || images.length === 0) return null
+  return (
+    <div className="pc-images">
+      <img src={images[idx]} alt="" className="pc-img" />
+      {images.length > 1 && (
+        <div className="pc-img-dots">
+          {images.map((_, i) => (
+            <span key={i} className={`pc-img-dot${i === idx ? ' active' : ''}`} onClick={() => setIdx(i)} />
+          ))}
+        </div>
+      )}
+      {images.length > 1 && idx > 0 && (
+        <button className="pc-img-nav pc-img-prev" onClick={() => setIdx(idx - 1)}>‹</button>
+      )}
+      {images.length > 1 && idx < images.length - 1 && (
+        <button className="pc-img-nav pc-img-next" onClick={() => setIdx(idx + 1)}>›</button>
+      )}
+    </div>
+  )
+}
+
 function CommentSection({ postId }) {
   const { user } = useAuth()
   const [comments, setComments] = useState([])
@@ -66,7 +100,7 @@ function CommentSection({ postId }) {
         <div style={{ padding: 12, textAlign: 'center' }}><span className="spinner" style={{ width: 16, height: 16 }} /></div>
       ) : comments.map(c => (
         <div key={c.id} className="cs-comment">
-          <div className="cs-avatar" style={{ background: avatarGradient(c.user.username) }}>{c.user.avatar_initial}</div>
+          <Avatar username={c.user.username} avatarUrl={c.user.avatar_url} size={28} fontSize={11} />
           <div style={{ flex: 1, minWidth: 0 }}>
             <span className="cs-username">@{c.user.username}</span>
             <span className="cs-text">{c.text}</span>
@@ -180,8 +214,8 @@ function PostCard({ post, onBlock }) {
   return (
     <div className="pc-card">
       <div className="pc-header">
-        <div className="pc-avatar" style={{ background: avatarGradient(post.user.username) }} onClick={() => nav(`/user/${post.user.username}`)}>
-          {post.user.avatar_initial}
+        <div style={{ cursor: 'pointer', flexShrink: 0 }} onClick={() => nav(`/user/${post.user.username}`)}>
+          <Avatar username={post.user.username} avatarUrl={post.user.avatar_url} size={36} fontSize={14} />
         </div>
         <div style={{ flex: 1 }}>
           <span className="pc-username" onClick={() => nav(`/user/${post.user.username}`)}>@{post.user.username}</span>
@@ -209,6 +243,7 @@ function PostCard({ post, onBlock }) {
       {showReportModal && <ReportModal onClose={() => setShowReportModal(false)} onReport={handleReport} />}
       {showBlockConfirm && <ConfirmBlockModal username={post.user.username} onClose={() => setShowBlockConfirm(false)} onConfirm={handleBlock} />}
       <div className="pc-text">{post.text}</div>
+      {post.images && post.images.length > 0 && <ImageCarousel images={post.images} />}
       {post.sport_tag && <span className="pc-sport">{post.sport_tag}</span>}
       <div className="pc-actions">
         <button className={`pc-action-btn${liked ? ' liked' : ''}`} onClick={handleLike}>
@@ -322,6 +357,14 @@ export default function Explore() {
         .cs-input:focus { border-color: var(--a); }
         .cs-send { background: var(--a); border: none; color: #fff; width: 34px; height: 34px; border-radius: 50%; font-size: 16px; cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
         .cs-send:disabled { opacity: 0.4; cursor: default; }
+        .pc-images { position: relative; }
+        .pc-img { width: 100%; max-height: 500px; object-fit: cover; display: block; }
+        .pc-img-dots { display: flex; gap: 6px; justify-content: center; padding: 8px 0; }
+        .pc-img-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--br); cursor: pointer; transition: background 0.15s; }
+        .pc-img-dot.active { background: var(--a); }
+        .pc-img-nav { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.5); border: none; color: #fff; width: 32px; height: 32px; border-radius: 50%; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .pc-img-prev { left: 8px; }
+        .pc-img-next { right: 8px; }
         .pc-menu-btn { background: none; border: none; color: var(--td); cursor: pointer; padding: 4px; border-radius: 4px; }
         .pc-menu-btn:hover { color: var(--t); }
         .pc-dropdown { position: absolute; right: 0; top: 28px; z-index: 50; background: var(--c); border: 1px solid var(--br); border-radius: 10px; min-width: 180px; box-shadow: 0 8px 24px rgba(0,0,0,0.4); overflow: hidden; }

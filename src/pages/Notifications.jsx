@@ -115,14 +115,18 @@ export default function Notifications() {
               >
                 {/* Avatar */}
                 <div style={{ position: 'relative', flexShrink: 0 }}>
-                  <div style={{
-                    width: 44, height: 44, borderRadius: '50%',
-                    background: avatarGradient(n.from_username),
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 18, fontWeight: 700, color: '#fff',
-                  }}>
-                    {n.from_username?.[0]?.toUpperCase() || '?'}
-                  </div>
+                  {n.from_avatar_url ? (
+                    <img src={n.from_avatar_url} alt="" style={{ width: 44, height: 44, borderRadius: '50%', objectFit: 'cover' }} />
+                  ) : (
+                    <div style={{
+                      width: 44, height: 44, borderRadius: '50%',
+                      background: avatarGradient(n.from_username),
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 18, fontWeight: 700, color: '#fff',
+                    }}>
+                      {n.from_username?.[0]?.toUpperCase() || '?'}
+                    </div>
+                  )}
                   <span style={{
                     position: 'absolute', bottom: -2, right: -2,
                     fontSize: 14, lineHeight: 1,
