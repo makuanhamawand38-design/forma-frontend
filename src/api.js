@@ -44,7 +44,12 @@ export const api = {
     request(`/programs/${programId}/swap-meal`, { method: 'POST', body: JSON.stringify({ week_idx: weekIdx, day_idx: dayIdx, meal_idx: mealIdx }) }),
   getXp: () => request('/users/me/xp'),
   addXp: (action, meta = {}) => request('/users/me/xp/add', { method: 'POST', body: JSON.stringify({ action, meta }) }),
-  getLeaderboard: () => request('/users/leaderboard'),
+  getLeaderboard: (period = 'alltime', scope = 'all') => request(`/users/leaderboard?period=${period}&scope=${scope}`),
+  // Competitions
+  getCompetitions: (status = 'active') => request(`/competitions?status=${status}`),
+  getCompetition: (id) => request(`/competitions/${id}`),
+  createCompetition: (data) => request('/competitions', { method: 'POST', body: JSON.stringify(data) }),
+  joinCompetition: (id) => request(`/competitions/${id}/join`, { method: 'POST' }),
   getPublicProfile: (username) => request(`/users/profile/${encodeURIComponent(username)}`),
   checkUsername: (username) => request(`/users/username/check/${encodeURIComponent(username)}`),
   setUsername: (username) => request('/users/me/username', { method: 'PUT', body: JSON.stringify({ username }) }),
