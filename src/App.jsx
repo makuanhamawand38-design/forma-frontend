@@ -4,8 +4,6 @@ import Home from './pages/Home'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import NotFound from './pages/NotFound'
-import Guest from './pages/Guest'
-import Onboarding from './pages/Onboarding'
 import ForgotPassword from './pages/ForgotPassword'
 import ResetPassword from './pages/ResetPassword'
 import Success from './pages/Success'
@@ -29,9 +27,7 @@ export default function App() {
       <Route path="/" element={<Home />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
-      <Route path="/guest" element={<Guest />} />
-      <Route path="/onboarding" element={<Onboarding />} />
-      <Route path="/forgot-password" element={<ForgotPassword />} />
+<Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/success" element={<ProtectedRoute><Success /></ProtectedRoute>} />
       <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
