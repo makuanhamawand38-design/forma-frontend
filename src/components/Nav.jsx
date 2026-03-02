@@ -1,13 +1,28 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { Zap, Grid, LogOut, Trophy } from './Icons'
+import { api } from '../api'
+import { Zap, Grid, LogOut, Trophy, Mail } from './Icons'
 
 export default function Nav() {
   const { user, logout } = useAuth()
   const location = useLocation()
   const path = location.pathname
   const [menuOpen, setMenuOpen] = useState(false)
+  const [unreadCount, setUnreadCount] = useState(0)
+  const pollRef = useRef(null)
+
+  const isPremium = user && user.subscription_type && user.subscription_type !== 'free'
+
+  useEffect(() => {
+    if (!isPremium) return
+    const fetchUnread = () => {
+      api.getUnreadCount().then(d => setUnreadCount(d.unread_count || 0)).catch(() => {})
+    }
+    fetchUnread()
+    pollRef.current = setInterval(fetchUnread, 15000)
+    return () => clearInterval(pollRef.current)
+  }, [isPremium])
 
   const closeMenu = () => setMenuOpen(false)
 
@@ -28,6 +43,16 @@ export default function Nav() {
                 <Link to="/explore"><button className={`nav-btn ${path === '/explore' ? 'active' : ''}`}>Utforska</button></Link>
                 <Link to="/dashboard"><button className={`nav-btn ${path === '/dashboard' ? 'active' : ''}`}><Grid size={16} />Dashboard</button></Link>
                 <Link to="/competitions"><button className={`nav-btn ${path === '/competitions' ? 'active' : ''}`}><Trophy size={16} />Tävlingar</button></Link>
+                <Link to="/messages" style={{ position: 'relative' }}>
+                  <button className={`nav-btn ${path === '/messages' ? 'active' : ''}`}><Mail size={16} /></button>
+                  {unreadCount > 0 && (
+                    <span style={{
+                      position: 'absolute', top: 2, right: 2, minWidth: 16, height: 16, borderRadius: 999,
+                      background: 'var(--a)', color: '#fff', fontSize: 10, fontWeight: 700,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px',
+                    }}>{unreadCount}</span>
+                  )}
+                </Link>
                 {(!user.subscription_type || user.subscription_type === 'free') && (
                   <Link to="/pricing"><button className="nav-btn-primary" style={{ padding: '6px 16px', fontSize: 13 }}><Zap size={14} />Uppgradera</button></Link>
                 )}
@@ -94,6 +119,18 @@ export default function Nav() {
               <Link to="/competitions" onClick={closeMenu} style={{ textDecoration: 'none' }}>
                 <div style={mobileLink(path === '/competitions')}>
                   <Trophy size={16} /> Tävlingar
+                </div>
+              </Link>
+              <Link to="/messages" onClick={closeMenu} style={{ textDecoration: 'none' }}>
+                <div style={mobileLink(path === '/messages')}>
+                  <Mail size={16} /> Meddelanden
+                  {unreadCount > 0 && (
+                    <span style={{
+                      marginLeft: 'auto', minWidth: 20, height: 20, borderRadius: 999,
+                      background: 'var(--a)', color: '#fff', fontSize: 11, fontWeight: 700,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 6px',
+                    }}>{unreadCount}</span>
+                  )}
                 </div>
               </Link>
               {(!user.subscription_type || user.subscription_type === 'free') && (

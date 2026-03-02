@@ -69,4 +69,10 @@ export const api = {
   getComments: (id, limit = 20, offset = 0) => request(`/posts/${id}/comments?limit=${limit}&offset=${offset}`),
   addComment: (id, text) => request(`/posts/${id}/comments`, { method: 'POST', body: JSON.stringify({ text }) }),
   deleteComment: (postId, commentId) => request(`/posts/${postId}/comments/${commentId}`, { method: 'DELETE' }),
+  // DM
+  startConversation: (username) => request('/dm/conversations', { method: 'POST', body: JSON.stringify({ username }) }),
+  getConversations: () => request('/dm/conversations'),
+  getUnreadCount: () => request('/dm/conversations/unread-count'),
+  getMessages: (conversationId, limit = 50, offset = 0) => request(`/dm/conversations/${conversationId}/messages?limit=${limit}&offset=${offset}`),
+  sendMessage: (conversationId, text) => request(`/dm/conversations/${conversationId}/messages`, { method: 'POST', body: JSON.stringify({ text }) }),
 }
