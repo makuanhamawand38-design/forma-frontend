@@ -9,6 +9,24 @@ import Leaderboard from '../components/Leaderboard'
 
 const NAMES = { training: "4 Veckors Träningsprogram", nutrition: "4 Veckors Kostschema", bundle: "8 Veckors Träning + Kost" }
 
+const AVATAR_COLORS = [
+  ['#ff4500', '#ff6b35'],
+  ['#6366f1', '#818cf8'],
+  ['#ec4899', '#f472b6'],
+  ['#14b8a6', '#2dd4bf'],
+  ['#f59e0b', '#fbbf24'],
+  ['#8b5cf6', '#a78bfa'],
+  ['#06b6d4', '#22d3ee'],
+  ['#ef4444', '#f87171'],
+]
+
+function avatarGradient(username) {
+  let hash = 0
+  for (let i = 0; i < (username || '').length; i++) hash = username.charCodeAt(i) + ((hash << 5) - hash)
+  const pair = AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length]
+  return `linear-gradient(135deg, ${pair[0]}, ${pair[1]})`
+}
+
 export default function Dashboard() {
   const { user } = useAuth()
   const nav = useNavigate()
@@ -16,14 +34,17 @@ export default function Dashboard() {
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
   const [generating, setGenerating] = useState(null)
+  const [suggested, setSuggested] = useState([])
 
   useEffect(() => {
     Promise.all([
       api.getPrograms().catch(() => []),
       api.getProfile().catch(() => null),
-    ]).then(([p, prof]) => {
+      api.getSuggestedUsers().catch(() => []),
+    ]).then(([p, prof, sug]) => {
       setPrograms(p)
       setProfile(prof)
+      setSuggested(sug)
     }).finally(() => setLoading(false))
   }, [])
 
@@ -92,6 +113,40 @@ export default function Dashboard() {
 
         {/* Leaderboard */}
         {!loading && <Leaderboard />}
+
+        {/* Suggested users */}
+        {!loading && suggested.length > 0 && (
+          <div style={{ marginBottom: 32 }}>
+            <h2 style={{ fontSize: 16, fontWeight: 600, color: 'var(--ts)', marginBottom: 16 }}>Föreslagna att följa</h2>
+            <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 8 }}>
+              {suggested.map(u => (
+                <div key={u.username} onClick={() => nav(`/user/${u.username}`)} style={{
+                  minWidth: 160, background: 'var(--c)', border: '1px solid var(--br)', borderRadius: 12,
+                  padding: 16, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center',
+                  gap: 8, transition: 'border-color 0.2s', flexShrink: 0,
+                }}
+                  onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--a)'}
+                  onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--br)'}
+                >
+                  <div style={{
+                    width: 48, height: 48, borderRadius: '50%', background: avatarGradient(u.username),
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 20, fontWeight: 700, color: '#fff',
+                  }}>
+                    {u.username?.[0]?.toUpperCase() || '?'}
+                  </div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--t)', textAlign: 'center' }}>@{u.username}</div>
+                  {u.city && <div style={{ fontSize: 11, color: 'var(--td)' }}>{u.city}</div>}
+                  {u.sports?.length > 0 && (
+                    <div style={{ fontSize: 11, color: 'var(--a)', textAlign: 'center' }}>
+                      {u.sports.slice(0, 2).join(', ')}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Stats */}
         {!loading && programs.length > 0 && (
