@@ -45,6 +45,7 @@ export const api = {
   getXp: () => request('/users/me/xp'),
   addXp: (action, meta = {}) => request('/users/me/xp/add', { method: 'POST', body: JSON.stringify({ action, meta }) }),
   getLeaderboard: () => request('/users/leaderboard'),
+  getPublicProfile: (username) => request(`/users/profile/${encodeURIComponent(username)}`),
   checkUsername: (username) => request(`/users/username/check/${encodeURIComponent(username)}`),
   setUsername: (username) => request('/users/me/username', { method: 'PUT', body: JSON.stringify({ username }) }),
 }
