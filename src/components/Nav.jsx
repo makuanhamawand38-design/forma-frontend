@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { api } from '../api'
-import { Zap, Grid, LogOut, Trophy, Mail, Bell } from './Icons'
+import { Zap, Grid, LogOut, Trophy, Mail, Bell, User } from './Icons'
 
 export default function Nav() {
   const { user, logout } = useAuth()
@@ -55,6 +55,7 @@ export default function Nav() {
                 <Link to="/explore"><button className={`nav-btn ${path === '/explore' ? 'active' : ''}`}>Utforska</button></Link>
                 <Link to="/dashboard"><button className={`nav-btn ${path === '/dashboard' ? 'active' : ''}`}><Grid size={16} />Dashboard</button></Link>
                 <Link to="/competitions"><button className={`nav-btn ${path === '/competitions' ? 'active' : ''}`}><Trophy size={16} />Tävlingar</button></Link>
+                <Link to="/find-partner"><button className={`nav-btn ${path === '/find-partner' ? 'active' : ''}`}><User size={16} /></button></Link>
                 <Link to="/messages" style={{ position: 'relative' }}>
                   <button className={`nav-btn ${path === '/messages' ? 'active' : ''}`}><Mail size={16} /></button>
                   {unreadCount > 0 && (
@@ -141,6 +142,11 @@ export default function Nav() {
               <Link to="/competitions" onClick={closeMenu} style={{ textDecoration: 'none' }}>
                 <div style={mobileLink(path === '/competitions')}>
                   <Trophy size={16} /> Tävlingar
+                </div>
+              </Link>
+              <Link to="/find-partner" onClick={closeMenu} style={{ textDecoration: 'none' }}>
+                <div style={mobileLink(path === '/find-partner')}>
+                  <User size={16} /> Hitta partner
                 </div>
               </Link>
               <Link to="/messages" onClick={closeMenu} style={{ textDecoration: 'none' }}>
