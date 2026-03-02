@@ -8,6 +8,8 @@ import ForgotPassword from './pages/ForgotPassword'
 import ResetPassword from './pages/ResetPassword'
 import Success from './pages/Success'
 import Dashboard from './pages/Dashboard'
+import Feed from './pages/Feed'
+import Explore from './pages/Explore'
 import ProgramView from './pages/ProgramView'
 import Profile from './pages/Profile'
 import UserProfile from './pages/UserProfile'
@@ -31,6 +33,8 @@ export default function App() {
 <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/success" element={<ProtectedRoute><Success /></ProtectedRoute>} />
+      <Route path="/feed" element={<ProtectedRoute><Feed /></ProtectedRoute>} />
+      <Route path="/explore" element={<Explore />} />
       <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
       <Route path="/program/:id" element={<ProtectedRoute><ProgramView /></ProtectedRoute>} />
       <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
