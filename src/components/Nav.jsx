@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { Zap, User, Grid, LogOut } from './Icons'
+import { Zap, Grid, LogOut } from './Icons'
 
 export default function Nav() {
   const { user, logout } = useAuth()
@@ -26,7 +26,6 @@ export default function Nav() {
               <>
                 <Link to="/dashboard"><button className={`nav-btn ${path === '/dashboard' ? 'active' : ''}`}><Grid size={16} />Dashboard</button></Link>
                 {user.username && <Link to={`/user/${user.username}`}><button className={`nav-btn ${path.startsWith('/user/') ? 'active' : ''}`} style={{ color: 'var(--a)', fontWeight: 600 }}>@{user.username}</button></Link>}
-                <Link to="/profile"><button className={`nav-btn ${path === '/profile' ? 'active' : ''}`}><User size={16} />Mitt konto</button></Link>
                 <button className="nav-btn" onClick={logout}><LogOut size={16} /></button>
               </>
             ) : (
@@ -84,11 +83,6 @@ export default function Nav() {
                   </div>
                 </Link>
               )}
-              <Link to="/profile" onClick={closeMenu} style={{ textDecoration: 'none' }}>
-                <div style={mobileLink(path === '/profile')}>
-                  <User size={16} /> Mitt konto
-                </div>
-              </Link>
               <div style={{ borderTop: '1px solid var(--br)', margin: '4px 0' }} />
               <button onClick={() => { logout(); closeMenu() }} style={{
                 ...mobileLink(false), background: 'none', border: 'none', cursor: 'pointer',
