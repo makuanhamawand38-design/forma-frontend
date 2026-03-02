@@ -79,4 +79,14 @@ export const api = {
   getNotifications: (limit = 30, offset = 0) => request(`/notifications?limit=${limit}&offset=${offset}`),
   markNotificationsRead: () => request('/notifications/read-all', { method: 'PUT' }),
   getNotifUnreadCount: () => request('/notifications/unread-count'),
+  // Partners
+  searchPartners: (params = {}) => {
+    const q = new URLSearchParams()
+    if (params.sport) q.set('sport', params.sport)
+    if (params.city) q.set('city', params.city)
+    if (params.gym) q.set('gym', params.gym)
+    if (params.limit) q.set('limit', params.limit)
+    if (params.offset) q.set('offset', params.offset)
+    return request(`/partners/search?${q.toString()}`)
+  },
 }
