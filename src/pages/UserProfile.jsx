@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { api } from '../api'
 import Nav from '../components/Nav'
-import { Zap } from '../components/Icons'
+import { Zap, Mail } from '../components/Icons'
 
 const AVATAR_COLORS = [
   ['#ff4500', '#ff6b35'],
@@ -196,7 +196,20 @@ export default function UserProfile() {
                   <div className="up-action-desktop">
                     {isOwn ? (
                       <button className="up-btn-edit" onClick={() => nav('/profile')}>Redigera profil</button>
-                    ) : followBtn}
+                    ) : (
+                      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                        {followBtn}
+                        {user && (
+                          <button
+                            className="up-btn-edit"
+                            onClick={() => nav(`/messages?to=${profile.username}`)}
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                          >
+                            <Mail size={14} /> Meddelande
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -219,7 +232,20 @@ export default function UserProfile() {
               <div className="up-action-mobile">
                 {isOwn ? (
                   <button className="up-btn-edit" onClick={() => nav('/profile')}>Redigera profil</button>
-                ) : followBtn}
+                ) : (
+                  <div style={{ display: 'flex', gap: 8, width: '100%' }}>
+                    <div style={{ flex: 1 }}>{followBtn}</div>
+                    {user && (
+                      <button
+                        className="up-btn-edit"
+                        onClick={() => nav(`/messages?to=${profile.username}`)}
+                        style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                      >
+                        <Mail size={14} /> Meddelande
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Bio */}
