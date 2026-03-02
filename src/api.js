@@ -9,7 +9,7 @@ async function request(path, options = {}) {
   return data
 }
 export const api = {
-  register: (email, password, username) => request('/auth/register', { method: 'POST', body: JSON.stringify({ email, password, username }) }),
+  register: (email, password, username, referral_code) => request('/auth/register', { method: 'POST', body: JSON.stringify({ email, password, username, referral_code: referral_code || undefined }) }),
   login: (identifier, password) => request('/auth/login', { method: 'POST', body: JSON.stringify({ identifier, password }) }),
   forgotPassword: (email) => request('/auth/forgot-password', { method: 'POST', body: JSON.stringify({ email }) }),
   resetPassword: (token, password) => request('/auth/reset-password', { method: 'POST', body: JSON.stringify({ token, password }) }),
@@ -89,4 +89,6 @@ export const api = {
     if (params.offset) q.set('offset', params.offset)
     return request(`/partners/search?${q.toString()}`)
   },
+  // Referrals
+  getMyReferrals: () => request('/users/me/referrals'),
 }

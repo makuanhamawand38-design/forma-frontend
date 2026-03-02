@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { api } from '../api'
 import Nav from '../components/Nav'
-import { Zap } from '../components/Icons'
+import { Zap, Check } from '../components/Icons'
 
 const USERNAME_RE = /^[a-z0-9_]{3,20}$/
 
@@ -43,6 +43,8 @@ export default function Profile() {
   const [city, setCity] = useState('')
   const [gym, setGym] = useState('')
   const [sports, setSports] = useState([])
+  const [referralData, setReferralData] = useState(null)
+  const [copied, setCopied] = useState(false)
 
   useEffect(() => {
     api.getProfile().then(p => {
@@ -60,6 +62,7 @@ export default function Profile() {
       setWeight(p.current_weight || '')
       setHeight(p.height || '')
     }).catch(() => {})
+    api.getMyReferrals().then(setReferralData).catch(() => {})
   }, [])
 
   const toggleSport = (s) => {
@@ -481,6 +484,107 @@ export default function Profile() {
                     <Zap size={24} />
                     <div><div style={{ fontWeight: 600, marginBottom: 2 }}>20% rabatt tillgänglig!</div><div style={{ fontSize: 13, color: 'var(--ts)' }}>Från slutfört program. Gäller nästa köp.</div></div>
                   </div>
+                </div>
+              )}
+
+              {referralData && (
+                <div className="profile-card" style={{ marginBottom: 24 }}>
+                  <h3>Referral-program</h3>
+                  <p style={{ fontSize: 13, color: 'var(--ts)', marginBottom: 16 }}>
+                    Bjud in vänner och få 1 månad gratis Premium vardera!
+                  </p>
+
+                  {/* Referral code */}
+                  <div style={{
+                    display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16,
+                    background: 'var(--b)', border: '1px solid var(--br)', borderRadius: 12, padding: '12px 16px',
+                  }}>
+                    <span style={{ flex: 1, fontFamily: 'monospace', fontSize: 18, fontWeight: 700, letterSpacing: 2, color: 'var(--a)' }}>
+                      {referralData.referral_code}
+                    </span>
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(referralData.referral_code)
+                        setCopied(true)
+                        setTimeout(() => setCopied(false), 2000)
+                      }}
+                      style={{
+                        padding: '8px 16px', borderRadius: 8, border: 'none', cursor: 'pointer',
+                        fontFamily: 'var(--f)', fontSize: 13, fontWeight: 600,
+                        background: copied ? 'rgba(34,197,94,0.15)' : 'var(--a)',
+                        color: copied ? '#22c55e' : '#fff',
+                        transition: 'all 0.2s',
+                      }}
+                    >
+                      {copied ? 'Kopierad!' : 'Kopiera'}
+                    </button>
+                  </div>
+
+                  {/* Stats */}
+                  <div style={{
+                    display: 'flex', gap: 16, marginBottom: 20,
+                    background: 'rgba(255,69,0,0.05)', borderRadius: 12, padding: '14px 16px',
+                  }}>
+                    <div style={{ textAlign: 'center', flex: 1 }}>
+                      <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--a)' }}>{referralData.total}</div>
+                      <div style={{ fontSize: 12, color: 'var(--td)' }}>Inbjudna</div>
+                    </div>
+                    <div style={{ width: 1, background: 'var(--br)' }} />
+                    <div style={{ textAlign: 'center', flex: 1 }}>
+                      <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--t)' }}>
+                        {referralData.milestones.filter(m => m.unlocked).length}
+                      </div>
+                      <div style={{ fontSize: 12, color: 'var(--td)' }}>Milstolpar</div>
+                    </div>
+                  </div>
+
+                  {/* Milestones */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {referralData.milestones.map(m => (
+                      <div key={m.count} style={{
+                        display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px',
+                        borderRadius: 10, background: m.unlocked ? 'rgba(34,197,94,0.08)' : 'var(--b)',
+                        border: m.unlocked ? '1px solid rgba(34,197,94,0.2)' : '1px solid var(--br)',
+                      }}>
+                        <div style={{
+                          width: 28, height: 28, borderRadius: '50%',
+                          background: m.unlocked ? 'rgba(34,197,94,0.2)' : 'rgba(255,255,255,0.05)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          color: m.unlocked ? '#22c55e' : 'var(--td)', flexShrink: 0,
+                        }}>
+                          {m.unlocked ? <Check size={14} /> : <span style={{ fontSize: 12, fontWeight: 700 }}>{m.count}</span>}
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{
+                            fontSize: 14, fontWeight: 600,
+                            color: m.unlocked ? '#22c55e' : 'var(--t)',
+                          }}>
+                            {m.badge}
+                          </div>
+                          <div style={{ fontSize: 12, color: 'var(--td)' }}>{m.description}</div>
+                        </div>
+                        {m.unlocked && <span style={{ fontSize: 16 }}>🏅</span>}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Recent referrals */}
+                  {referralData.referrals.length > 0 && (
+                    <div style={{ marginTop: 16 }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--ts)', marginBottom: 8 }}>Senaste inbjudna</div>
+                      {referralData.referrals.slice(0, 5).map((r, i) => (
+                        <div key={i} style={{
+                          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                          padding: '6px 0', fontSize: 13,
+                        }}>
+                          <span style={{ color: 'var(--t)', fontWeight: 500 }}>@{r.username}</span>
+                          <span style={{ color: 'var(--td)', fontSize: 11 }}>
+                            {new Date(r.created_at).toLocaleDateString('sv-SE')}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
 
