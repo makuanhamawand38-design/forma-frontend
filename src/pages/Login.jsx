@@ -19,7 +19,7 @@ export default function Login() {
     try {
       const data = await api.login(identifier, pw)
       login(data.token, data.email)
-      nav('/dashboard')
+      nav('/feed')
     } catch (err) {
       setError(err.message)
     }

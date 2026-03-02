@@ -53,4 +53,15 @@ export const api = {
   getFollowers: (username, limit = 20, offset = 0) => request(`/users/${encodeURIComponent(username)}/followers?limit=${limit}&offset=${offset}`),
   getFollowing: (username, limit = 20, offset = 0) => request(`/users/${encodeURIComponent(username)}/following?limit=${limit}&offset=${offset}`),
   getSuggestedUsers: () => request('/users/suggested'),
+  // Posts
+  createPost: (text, sport_tag) => request('/posts', { method: 'POST', body: JSON.stringify({ text, sport_tag: sport_tag || null }) }),
+  getFeed: (limit = 20, offset = 0) => request(`/posts/feed?limit=${limit}&offset=${offset}`),
+  getExplore: (limit = 20, offset = 0) => request(`/posts/explore?limit=${limit}&offset=${offset}`),
+  getPost: (id) => request(`/posts/${id}`),
+  deletePost: (id) => request(`/posts/${id}`, { method: 'DELETE' }),
+  likePost: (id) => request(`/posts/${id}/like`, { method: 'POST' }),
+  unlikePost: (id) => request(`/posts/${id}/like`, { method: 'DELETE' }),
+  getComments: (id, limit = 20, offset = 0) => request(`/posts/${id}/comments?limit=${limit}&offset=${offset}`),
+  addComment: (id, text) => request(`/posts/${id}/comments`, { method: 'POST', body: JSON.stringify({ text }) }),
+  deleteComment: (postId, commentId) => request(`/posts/${postId}/comments/${commentId}`, { method: 'DELETE' }),
 }

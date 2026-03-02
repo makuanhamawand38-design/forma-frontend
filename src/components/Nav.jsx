@@ -24,12 +24,17 @@ export default function Nav() {
           <div className="nav-links nav-desktop">
             {user ? (
               <>
+                <Link to="/feed"><button className={`nav-btn ${path === '/feed' ? 'active' : ''}`}>Flöde</button></Link>
+                <Link to="/explore"><button className={`nav-btn ${path === '/explore' ? 'active' : ''}`}>Utforska</button></Link>
                 <Link to="/dashboard"><button className={`nav-btn ${path === '/dashboard' ? 'active' : ''}`}><Grid size={16} />Dashboard</button></Link>
                 {user.username && <Link to={`/user/${user.username}`}><button className={`nav-btn ${path.startsWith('/user/') ? 'active' : ''}`} style={{ color: 'var(--a)', fontWeight: 600 }}>@{user.username}</button></Link>}
                 <button className="nav-btn" onClick={logout}><LogOut size={16} /></button>
               </>
             ) : (
-              <Link to="/login"><button className="nav-btn-primary">Logga in</button></Link>
+              <>
+                <Link to="/explore"><button className={`nav-btn ${path === '/explore' ? 'active' : ''}`}>Utforska</button></Link>
+                <Link to="/login"><button className="nav-btn-primary">Logga in</button></Link>
+              </>
             )}
           </div>
 
@@ -71,6 +76,12 @@ export default function Nav() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {user ? (
             <>
+              <Link to="/feed" onClick={closeMenu} style={{ textDecoration: 'none' }}>
+                <div style={mobileLink(path === '/feed')}>Flöde</div>
+              </Link>
+              <Link to="/explore" onClick={closeMenu} style={{ textDecoration: 'none' }}>
+                <div style={mobileLink(path === '/explore')}>Utforska</div>
+              </Link>
               <Link to="/dashboard" onClick={closeMenu} style={{ textDecoration: 'none' }}>
                 <div style={mobileLink(path === '/dashboard')}>
                   <Grid size={16} /> Dashboard
@@ -92,14 +103,19 @@ export default function Nav() {
               </button>
             </>
           ) : (
-            <Link to="/login" onClick={closeMenu} style={{ textDecoration: 'none' }}>
-              <div style={{
-                ...mobileLink(false), background: 'var(--a)', color: '#fff',
-                borderRadius: 8, textAlign: 'center', fontWeight: 700,
-              }}>
-                Logga in
-              </div>
-            </Link>
+            <>
+              <Link to="/explore" onClick={closeMenu} style={{ textDecoration: 'none' }}>
+                <div style={mobileLink(path === '/explore')}>Utforska</div>
+              </Link>
+              <Link to="/login" onClick={closeMenu} style={{ textDecoration: 'none' }}>
+                <div style={{
+                  ...mobileLink(false), background: 'var(--a)', color: '#fff',
+                  borderRadius: 8, textAlign: 'center', fontWeight: 700,
+                }}>
+                  Logga in
+                </div>
+              </Link>
+            </>
           )}
         </div>
       </div>
