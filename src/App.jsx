@@ -1,5 +1,6 @@
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from './context/AuthContext'
+import CreatePostFab from './components/CreatePostFab'
 import Home from './pages/Home'
 import Login from './pages/Login'
 import Register from './pages/Register'
@@ -30,6 +31,14 @@ function ProtectedRoute({ children }) {
   return children
 }
 
+function GlobalFab() {
+  const { user } = useAuth()
+  const { pathname } = useLocation()
+  const hide = ['/messages', '/shop', '/login', '/register', '/', '/pricing', '/forgot-password', '/reset-password', '/villkor', '/guidelines']
+  if (!user || hide.includes(pathname)) return null
+  return <CreatePostFab />
+}
+
 export default function App() {
   return (
     <>
@@ -56,6 +65,7 @@ export default function App() {
       <Route path="/villkor" element={<Terms />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
+    <GlobalFab />
     <CookieConsent />
     </>
   )

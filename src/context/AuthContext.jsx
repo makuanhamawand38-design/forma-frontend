@@ -12,16 +12,19 @@ export function AuthProvider({ children }) {
     const email = localStorage.getItem('forma_email')
     if (token && email) {
       setUser({ email, token })
-      // Try to load profile
+      // Load full profile (including username) before setting loading=false
       api.getProfile().then(profile => {
         setUser(prev => ({ ...prev, ...profile }))
       }).catch(() => {
         localStorage.removeItem('forma_token')
         localStorage.removeItem('forma_email')
         setUser(null)
+      }).finally(() => {
+        setLoading(false)
       })
+    } else {
+      setLoading(false)
     }
-    setLoading(false)
   }, [])
 
   const login = async (token, email) => {
