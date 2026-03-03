@@ -44,8 +44,15 @@ function Avatar({ username, avatarUrl, size = 36, fontSize = 14 }) {
   )
 }
 
-function ImageCarousel({ images }) {
+function MediaCarousel({ images, videoUrl }) {
   const [idx, setIdx] = useState(0)
+  if (videoUrl) {
+    return (
+      <div className="pc-images">
+        <video src={videoUrl} controls playsInline preload="metadata" className="pc-video" />
+      </div>
+    )
+  }
   if (!images || images.length === 0) return null
   return (
     <div className="pc-images">
@@ -67,19 +74,42 @@ function ImageCarousel({ images }) {
   )
 }
 
+function isVideoFile(file) {
+  return file.type.startsWith('video/')
+}
+
 function CreatePostModal({ onClose, onCreated }) {
   const [text, setText] = useState('')
   const [sportTag, setSportTag] = useState('')
   const [posting, setPosting] = useState(false)
   const [imageFiles, setImageFiles] = useState([])
   const [previews, setPreviews] = useState([])
+  const [videoFile, setVideoFile] = useState(null)
+  const [videoPreview, setVideoPreview] = useState(null)
   const fileRef = useRef(null)
 
   const handleFiles = (e) => {
     const files = Array.from(e.target.files || [])
-    const combined = [...imageFiles, ...files].slice(0, 10)
-    setImageFiles(combined)
-    setPreviews(combined.map(f => URL.createObjectURL(f)))
+    if (!files.length) return
+    const vid = files.find(f => isVideoFile(f))
+    if (vid) {
+      imageFiles.forEach((_, i) => previews[i] && URL.revokeObjectURL(previews[i]))
+      setImageFiles([])
+      setPreviews([])
+      if (videoPreview) URL.revokeObjectURL(videoPreview)
+      setVideoFile(vid)
+      setVideoPreview(URL.createObjectURL(vid))
+    } else {
+      if (videoFile) {
+        if (videoPreview) URL.revokeObjectURL(videoPreview)
+        setVideoFile(null)
+        setVideoPreview(null)
+      }
+      const combined = [...imageFiles, ...files.filter(f => !isVideoFile(f))].slice(0, 10)
+      setImageFiles(combined)
+      setPreviews(combined.map(f => URL.createObjectURL(f)))
+    }
+    e.target.value = ''
   }
 
   const removeImage = (i) => {
@@ -89,11 +119,17 @@ function CreatePostModal({ onClose, onCreated }) {
     setPreviews(newFiles.map(f => URL.createObjectURL(f)))
   }
 
+  const removeVideo = () => {
+    if (videoPreview) URL.revokeObjectURL(videoPreview)
+    setVideoFile(null)
+    setVideoPreview(null)
+  }
+
   const handleSubmit = async () => {
     if (!text.trim()) return
     setPosting(true)
     try {
-      const post = await api.createPost(text, sportTag || null, imageFiles)
+      const post = await api.createPost(text, sportTag || null, imageFiles, videoFile)
       onCreated(post)
       onClose()
     } catch (err) {
@@ -101,6 +137,8 @@ function CreatePostModal({ onClose, onCreated }) {
     }
     setPosting(false)
   }
+
+  const maxReached = imageFiles.length >= 10 || !!videoFile
 
   return (
     <div className="cpm-overlay" onClick={onClose}>
@@ -132,6 +170,14 @@ function CreatePostModal({ onClose, onCreated }) {
             </div>
           )}
 
+          {/* Video preview */}
+          {videoPreview && (
+            <div style={{ position: 'relative', marginTop: 12 }}>
+              <video src={videoPreview} controls style={{ width: '100%', maxHeight: 200, borderRadius: 8, background: '#000' }} />
+              <button className="cpm-preview-rm" onClick={removeVideo} style={{ position: 'absolute', top: 6, right: 6 }}>✕</button>
+            </div>
+          )}
+
           <div className="cpm-sport-label">Sport (valfritt)</div>
           <div className="cpm-sport-list">
             {SPORT_OPTIONS.map(s => (
@@ -142,10 +188,10 @@ function CreatePostModal({ onClose, onCreated }) {
           </div>
         </div>
         <div className="cpm-footer">
-          <input ref={fileRef} type="file" accept="image/*" multiple hidden onChange={handleFiles} />
-          <button className="cpm-img-btn" onClick={() => fileRef.current?.click()} disabled={imageFiles.length >= 10}>
+          <input ref={fileRef} type="file" accept="image/*,video/mp4,video/quicktime" multiple hidden onChange={handleFiles} />
+          <button className="cpm-img-btn" onClick={() => fileRef.current?.click()} disabled={maxReached}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
-            {imageFiles.length > 0 && <span style={{ fontSize: 12 }}>{imageFiles.length}/10</span>}
+            {(imageFiles.length > 0 || videoFile) && <span style={{ fontSize: 12 }}>{videoFile ? '1 video' : `${imageFiles.length}/10`}</span>}
           </button>
           <button className="cpm-btn-post" onClick={handleSubmit} disabled={!text.trim() || posting}>
             {posting ? <span className="spinner" style={{ width: 16, height: 16 }} /> : 'Publicera'}
@@ -378,7 +424,7 @@ function PostCard({ post, onDelete, onBlock }) {
 
       {/* Body */}
       <div className="pc-text">{post.text}</div>
-      {post.images && post.images.length > 0 && <ImageCarousel images={post.images} />}
+      {(post.video_url || (post.images && post.images.length > 0)) && <MediaCarousel images={post.images} videoUrl={post.video_url} />}
       {post.sport_tag && <span className="pc-sport">{post.sport_tag}</span>}
 
       {/* Actions */}
@@ -763,11 +809,15 @@ export default function Feed() {
           align-items: center; justify-content: center;
         }
 
-        /* Post images */
+        /* Post media */
         .pc-images { position: relative; }
         .pc-img {
           width: 100%; max-height: 500px; object-fit: cover;
           display: block;
+        }
+        .pc-video {
+          width: 100%; max-height: 500px; display: block;
+          background: #000;
         }
         .pc-img-dots {
           display: flex; gap: 6px; justify-content: center;

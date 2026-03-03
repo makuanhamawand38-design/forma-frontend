@@ -3,6 +3,10 @@ import { api } from '../api'
 
 const SPORT_OPTIONS = ['Styrketräning', 'Löpning', 'Cykling', 'Simning', 'Yoga', 'Crossfit', 'Kampsport', 'Fotboll', 'Tennis', 'Klättring']
 
+function isVideo(file) {
+  return file.type.startsWith('video/')
+}
+
 export default function CreatePostFab({ onCreated }) {
   const [open, setOpen] = useState(false)
   const [text, setText] = useState('')
@@ -10,13 +14,35 @@ export default function CreatePostFab({ onCreated }) {
   const [posting, setPosting] = useState(false)
   const [imageFiles, setImageFiles] = useState([])
   const [previews, setPreviews] = useState([])
+  const [videoFile, setVideoFile] = useState(null)
+  const [videoPreview, setVideoPreview] = useState(null)
   const fileRef = useRef(null)
 
   const handleFiles = (e) => {
     const files = Array.from(e.target.files || [])
-    const combined = [...imageFiles, ...files].slice(0, 10)
-    setImageFiles(combined)
-    setPreviews(combined.map(f => URL.createObjectURL(f)))
+    if (!files.length) return
+
+    const vid = files.find(f => isVideo(f))
+    if (vid) {
+      // Video selected — clear images, set single video
+      imageFiles.forEach((_, i) => previews[i] && URL.revokeObjectURL(previews[i]))
+      setImageFiles([])
+      setPreviews([])
+      if (videoPreview) URL.revokeObjectURL(videoPreview)
+      setVideoFile(vid)
+      setVideoPreview(URL.createObjectURL(vid))
+    } else {
+      // Images selected — clear video, add images
+      if (videoFile) {
+        if (videoPreview) URL.revokeObjectURL(videoPreview)
+        setVideoFile(null)
+        setVideoPreview(null)
+      }
+      const combined = [...imageFiles, ...files.filter(f => !isVideo(f))].slice(0, 10)
+      setImageFiles(combined)
+      setPreviews(combined.map(f => URL.createObjectURL(f)))
+    }
+    e.target.value = ''
   }
 
   const removeImage = (i) => {
@@ -26,11 +52,17 @@ export default function CreatePostFab({ onCreated }) {
     setPreviews(newFiles.map(f => URL.createObjectURL(f)))
   }
 
+  const removeVideo = () => {
+    if (videoPreview) URL.revokeObjectURL(videoPreview)
+    setVideoFile(null)
+    setVideoPreview(null)
+  }
+
   const handleSubmit = async () => {
     if (!text.trim()) return
     setPosting(true)
     try {
-      const post = await api.createPost(text, sportTag || null, imageFiles)
+      const post = await api.createPost(text, sportTag || null, imageFiles, videoFile)
       onCreated?.(post)
       handleClose()
     } catch (err) {
@@ -46,7 +78,11 @@ export default function CreatePostFab({ onCreated }) {
     setImageFiles([])
     previews.forEach(p => URL.revokeObjectURL(p))
     setPreviews([])
+    removeVideo()
   }
+
+  const mediaCount = imageFiles.length + (videoFile ? 1 : 0)
+  const maxReached = imageFiles.length >= 10 || !!videoFile
 
   return (
     <>
@@ -75,6 +111,7 @@ export default function CreatePostFab({ onCreated }) {
               />
               <div className="fab-char-count">{text.length}/2000</div>
 
+              {/* Image previews */}
               {previews.length > 0 && (
                 <div className="fab-previews">
                   {previews.map((src, i) => (
@@ -83,6 +120,14 @@ export default function CreatePostFab({ onCreated }) {
                       <button className="fab-preview-rm" onClick={() => removeImage(i)}>✕</button>
                     </div>
                   ))}
+                </div>
+              )}
+
+              {/* Video preview */}
+              {videoPreview && (
+                <div className="fab-video-preview">
+                  <video src={videoPreview} controls style={{ width: '100%', maxHeight: 200, borderRadius: 8, background: '#000' }} />
+                  <button className="fab-preview-rm" onClick={removeVideo} style={{ position: 'absolute', top: 6, right: 6 }}>✕</button>
                 </div>
               )}
 
@@ -96,10 +141,10 @@ export default function CreatePostFab({ onCreated }) {
               </div>
             </div>
             <div className="fab-modal-footer">
-              <input ref={fileRef} type="file" accept="image/*" multiple hidden onChange={handleFiles} />
-              <button className="fab-img-btn" onClick={() => fileRef.current?.click()} disabled={imageFiles.length >= 10}>
+              <input ref={fileRef} type="file" accept="image/*,video/mp4,video/quicktime" multiple hidden onChange={handleFiles} />
+              <button className="fab-img-btn" onClick={() => fileRef.current?.click()} disabled={maxReached}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
-                {imageFiles.length > 0 && <span style={{ fontSize: 12 }}>{imageFiles.length}/10</span>}
+                {mediaCount > 0 && <span style={{ fontSize: 12 }}>{videoFile ? '1 video' : `${imageFiles.length}/10`}</span>}
               </button>
               <button className="fab-btn-post" onClick={handleSubmit} disabled={!text.trim() || posting}>
                 {posting ? <span className="spinner" style={{ width: 16, height: 16 }} /> : 'Publicera'}
@@ -149,6 +194,7 @@ export default function CreatePostFab({ onCreated }) {
           background: var(--c); border: 1px solid var(--br);
           border-radius: 16px; width: 100%; max-width: 520px;
           display: flex; flex-direction: column; overflow: hidden;
+          max-height: 90vh;
         }
         .fab-modal-header {
           display: flex; align-items: center; justify-content: space-between;
@@ -160,7 +206,7 @@ export default function CreatePostFab({ onCreated }) {
           font-size: 18px; cursor: pointer; padding: 4px 8px;
         }
         .fab-modal-close:hover { color: var(--t); }
-        .fab-modal-body { padding: 16px 20px; }
+        .fab-modal-body { padding: 16px 20px; overflow-y: auto; }
         .fab-textarea {
           width: 100%; min-height: 120px; background: var(--s);
           border: 1px solid var(--br); border-radius: 12px;
@@ -225,6 +271,9 @@ export default function CreatePostFab({ onCreated }) {
           background: rgba(0,0,0,0.7); border: none; color: #fff;
           font-size: 12px; cursor: pointer; display: flex;
           align-items: center; justify-content: center;
+        }
+        .fab-video-preview {
+          position: relative; margin-top: 12px;
         }
       `}</style>
     </>

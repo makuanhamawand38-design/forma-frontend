@@ -40,8 +40,15 @@ function Avatar({ username, avatarUrl, size = 36, fontSize = 14 }) {
   )
 }
 
-function ImageCarousel({ images }) {
+function MediaCarousel({ images, videoUrl }) {
   const [idx, setIdx] = useState(0)
+  if (videoUrl) {
+    return (
+      <div className="pc-images">
+        <video src={videoUrl} controls playsInline preload="metadata" className="pc-video" />
+      </div>
+    )
+  }
   if (!images || images.length === 0) return null
   return (
     <div className="pc-images">
@@ -244,7 +251,7 @@ function PostCard({ post, onBlock }) {
       {showReportModal && <ReportModal onClose={() => setShowReportModal(false)} onReport={handleReport} />}
       {showBlockConfirm && <ConfirmBlockModal username={post.user.username} onClose={() => setShowBlockConfirm(false)} onConfirm={handleBlock} />}
       <div className="pc-text">{post.text}</div>
-      {post.images && post.images.length > 0 && <ImageCarousel images={post.images} />}
+      {(post.video_url || (post.images && post.images.length > 0)) && <MediaCarousel images={post.images} videoUrl={post.video_url} />}
       {post.sport_tag && <span className="pc-sport">{post.sport_tag}</span>}
       <div className="pc-actions">
         <button className={`pc-action-btn${liked ? ' liked' : ''}`} onClick={handleLike}>
@@ -363,6 +370,7 @@ export default function Explore() {
         .cs-send:disabled { opacity: 0.4; cursor: default; }
         .pc-images { position: relative; }
         .pc-img { width: 100%; max-height: 500px; object-fit: cover; display: block; }
+        .pc-video { width: 100%; max-height: 500px; display: block; background: #000; }
         .pc-img-dots { display: flex; gap: 6px; justify-content: center; padding: 8px 0; }
         .pc-img-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--br); cursor: pointer; transition: background 0.15s; }
         .pc-img-dot.active { background: var(--a); }

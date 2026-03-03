@@ -78,12 +78,13 @@ export const api = {
     return data
   },
   // Posts
-  createPost: async (text, sport_tag, imageFiles = []) => {
+  createPost: async (text, sport_tag, imageFiles = [], videoFile = null) => {
     const token = localStorage.getItem('forma_token')
     const fd = new FormData()
     fd.append('text', text)
     if (sport_tag) fd.append('sport_tag', sport_tag)
     imageFiles.forEach(f => fd.append('images', f))
+    if (videoFile) fd.append('video', videoFile)
     const res = await fetch(`${API}/posts`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: fd })
     const data = await res.json()
     if (!res.ok) throw new Error(data.detail || 'Något gick fel')
