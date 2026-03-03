@@ -110,15 +110,9 @@ export const api = {
   markNotificationsRead: () => request('/notifications/read-all', { method: 'PUT' }),
   getNotifUnreadCount: () => request('/notifications/unread-count'),
   // Partners
-  searchPartners: (params = {}) => {
-    const q = new URLSearchParams()
-    if (params.sport) q.set('sport', params.sport)
-    if (params.city) q.set('city', params.city)
-    if (params.gym) q.set('gym', params.gym)
-    if (params.limit) q.set('limit', params.limit)
-    if (params.offset) q.set('offset', params.offset)
-    return request(`/partners/search?${q.toString()}`)
-  },
+  searchPartners: () => request('/partners/search'),
+  contactPartner: (username, message = '') => request(`/partners/${encodeURIComponent(username)}/contact`, { method: 'POST', body: JSON.stringify({ message }) }),
+  skipPartner: (username) => request(`/partners/${encodeURIComponent(username)}/skip`, { method: 'POST' }),
   // Referrals
   getMyReferrals: () => request('/users/me/referrals'),
   // Moderation

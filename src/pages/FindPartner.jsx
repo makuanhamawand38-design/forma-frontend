@@ -1,10 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { api } from '../api'
 import Nav from '../components/Nav'
-import Paywall from '../components/Paywall'
-import { Zap, Mail, User } from '../components/Icons'
+import { Zap, User } from '../components/Icons'
 
 const AVATAR_COLORS = [
   ['#ff4500', '#ff6b35'],
@@ -24,279 +23,384 @@ function avatarGradient(username) {
   return `linear-gradient(135deg, ${pair[0]}, ${pair[1]})`
 }
 
-const LEVEL_COLORS = {
-  1: '#888', 2: '#3b82f6', 3: '#22c55e', 4: '#eab308', 5: '#f97316', 6: '#ef4444',
-}
-
-const SPORTS = [
-  'Styrketräning', 'Löpning', 'Crossfit', 'Yoga', 'Simning',
-  'Cykling', 'Kampsport', 'Fotboll', 'Tennis', 'Padel', 'Klättring',
-]
-
 export default function FindPartner() {
-  const { user } = useAuth()
+  const { user, refreshProfile } = useAuth()
   const nav = useNavigate()
-  const [partners, setPartners] = useState([])
-  const [total, setTotal] = useState(0)
+  const [tab, setTab] = useState('discover')
+  const [partner, setPartner] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [sport, setSport] = useState('')
-  const [city, setCity] = useState('')
-  const [gym, setGym] = useState('')
-  const [showPaywall, setShowPaywall] = useState(false)
-  const [followedSet, setFollowedSet] = useState(new Set())
-  const [followLoading, setFollowLoading] = useState(null)
+  const [actionLoading, setActionLoading] = useState(null)
+  const [swipeDir, setSwipeDir] = useState(null)
+  const [empty, setEmpty] = useState(false)
+  const [contactMsg, setContactMsg] = useState('')
+  const [showMsgInput, setShowMsgInput] = useState(false)
+  const [successMsg, setSuccessMsg] = useState('')
 
-  const isPremium = user && user.subscription_type && user.subscription_type !== 'free'
+  // Settings tab state
+  const [seekingPartner, setSeekingPartner] = useState(user?.seeking_partner || false)
+  const [seekingText, setSeekingText] = useState(user?.seeking_partner_text || '')
+  const [savingSettings, setSavingSettings] = useState(false)
+  const [settingsSaved, setSettingsSaved] = useState(false)
 
   useEffect(() => {
-    if (!isPremium) {
-      setLoading(false)
-      return
+    if (user) {
+      setSeekingPartner(user.seeking_partner || false)
+      setSeekingText(user.seeking_partner_text || '')
     }
-    search()
-  }, [isPremium])
+  }, [user])
 
-  const search = (offset = 0) => {
+  const fetchNext = () => {
     setLoading(true)
-    const params = { limit: 20, offset }
-    if (sport) params.sport = sport
-    if (city) params.city = city
-    if (gym) params.gym = gym
-    api.searchPartners(params)
+    setSwipeDir(null)
+    setEmpty(false)
+    setShowMsgInput(false)
+    setContactMsg('')
+    api.searchPartners()
       .then(data => {
-        if (offset === 0) {
-          setPartners(data.partners || [])
+        if (data.partner) {
+          setPartner(data.partner)
+          setEmpty(false)
         } else {
-          setPartners(prev => [...prev, ...(data.partners || [])])
+          setPartner(null)
+          setEmpty(true)
         }
-        setTotal(data.total || 0)
       })
-      .catch(() => {})
+      .catch(() => { setPartner(null); setEmpty(true) })
       .finally(() => setLoading(false))
   }
 
-  const handleSearch = () => {
-    search(0)
+  useEffect(() => { fetchNext() }, [])
+
+  const animateAndNext = (dir, cb) => {
+    setSwipeDir(dir)
+    setTimeout(async () => {
+      if (cb) await cb()
+      fetchNext()
+    }, 300)
   }
 
-  const handleFollow = async (username) => {
-    setFollowLoading(username)
+  const handleSkip = () => {
+    if (!partner || actionLoading) return
+    setActionLoading('skip')
+    animateAndNext('left', async () => {
+      try { await api.skipPartner(partner.username) } catch {}
+      setActionLoading(null)
+    })
+  }
+
+  const handleContact = async () => {
+    if (!partner || actionLoading) return
+    if (!showMsgInput) {
+      setShowMsgInput(true)
+      return
+    }
+    setActionLoading('contact')
     try {
-      await api.followUser(username)
-      setFollowedSet(prev => new Set([...prev, username]))
-    } catch (e) {}
-    setFollowLoading(null)
+      await api.contactPartner(partner.username, contactMsg)
+      setSuccessMsg(`Förfrågan skickad till @${partner.username}!`)
+      setTimeout(() => setSuccessMsg(''), 3000)
+    } catch {}
+    setActionLoading(null)
+    animateAndNext('right', null)
   }
 
-  const selectStyle = {
-    padding: '10px 14px', borderRadius: 10, border: '1px solid var(--br)',
-    background: 'var(--c)', color: 'var(--t)', fontFamily: 'var(--f)', fontSize: 14,
-    outline: 'none', flex: 1, minWidth: 0,
-  }
-
-  if (!isPremium) {
-    return (
-      <div>
-        <Nav />
-        <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-          <div style={{ textAlign: 'center', maxWidth: 400 }}>
-            <div style={{
-              width: 72, height: 72, borderRadius: '50%', margin: '0 auto 20px',
-              background: 'rgba(139,92,246,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: '#8b5cf6',
-            }}>
-              <User size={36} />
-            </div>
-            <h2 style={{ fontSize: 24, fontWeight: 700, marginBottom: 8 }}>Hitta träningspartner</h2>
-            <p style={{ color: 'var(--ts)', fontSize: 15, marginBottom: 24 }}>
-              Uppgradera till Premium för att hitta träningspartners nära dig.
-            </p>
-            <button
-              onClick={() => setShowPaywall(true)}
-              style={{
-                padding: '12px 32px', borderRadius: 999, fontSize: 15, fontWeight: 700,
-                background: '#8b5cf6', color: '#fff', border: 'none', cursor: 'pointer',
-              }}
-            >
-              Uppgradera till Premium
-            </button>
-          </div>
-        </div>
-        {showPaywall && <Paywall requiredLevel="premium" onClose={() => setShowPaywall(false)} />}
-      </div>
-    )
+  const saveSettings = async () => {
+    setSavingSettings(true)
+    setSettingsSaved(false)
+    try {
+      await api.updateProfile({ seeking_partner: seekingPartner, seeking_partner_text: seekingText || '' })
+      if (refreshProfile) await refreshProfile()
+      setSettingsSaved(true)
+      setTimeout(() => setSettingsSaved(false), 3000)
+    } catch (e) { alert(e.message) }
+    setSavingSettings(false)
   }
 
   return (
     <div>
       <Nav />
-      <div style={{ maxWidth: 700, margin: '0 auto', padding: '20px 16px 80px' }}>
-        <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 4 }}>Hitta träningspartner</h1>
-        <p style={{ color: 'var(--ts)', fontSize: 14, marginBottom: 20 }}>
-          Hitta någon att träna med baserat på sport, stad och gym.
+      <div style={{ maxWidth: 480, margin: '0 auto', padding: '20px 16px 100px', minHeight: '100vh' }}>
+        <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 4, textAlign: 'center' }}>Hitta partner</h1>
+        <p style={{ color: 'var(--ts)', fontSize: 14, marginBottom: 20, textAlign: 'center' }}>
+          Hitta någon att träna med
         </p>
 
-        {/* Filters */}
-        <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
-          <select value={sport} onChange={e => setSport(e.target.value)} style={selectStyle}>
-            <option value="">Alla sporter</option>
-            {SPORTS.map(s => <option key={s} value={s}>{s}</option>)}
-          </select>
-          <input
-            type="text"
-            placeholder="Stad..."
-            value={city}
-            onChange={e => setCity(e.target.value)}
-            style={selectStyle}
-          />
-          <input
-            type="text"
-            placeholder="Gym..."
-            value={gym}
-            onChange={e => setGym(e.target.value)}
-            style={selectStyle}
-          />
-          <button
-            onClick={handleSearch}
-            style={{
-              padding: '10px 20px', borderRadius: 10, border: 'none',
-              background: 'var(--a)', color: '#fff', fontFamily: 'var(--f)',
-              fontSize: 14, fontWeight: 600, cursor: 'pointer', flexShrink: 0,
-            }}
-          >
-            Sök
-          </button>
+        {/* Tabs */}
+        <div style={{ display: 'flex', gap: 4, marginBottom: 24, justifyContent: 'center' }}>
+          {[['discover', 'Upptäck'], ['settings', 'Min sökning']].map(([k, v]) => (
+            <button key={k} onClick={() => setTab(k)} style={{
+              padding: '10px 24px', borderRadius: 10, border: 'none', cursor: 'pointer',
+              fontFamily: 'var(--f)', fontSize: 14, fontWeight: tab === k ? 700 : 500,
+              background: tab === k ? 'rgba(255,69,0,0.15)' : 'var(--c)',
+              color: tab === k ? 'var(--a)' : 'var(--ts)', transition: 'all 0.2s',
+            }}>
+              {v}
+            </button>
+          ))}
         </div>
 
-        {/* Results */}
-        {loading && partners.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: 48 }}>
-            <span className="spinner" style={{ width: 28, height: 28 }} />
+        {/* Success toast */}
+        {successMsg && (
+          <div style={{
+            background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 12,
+            padding: '12px 16px', marginBottom: 16, textAlign: 'center',
+            color: '#22c55e', fontWeight: 600, fontSize: 14,
+          }}>
+            {successMsg}
           </div>
-        ) : partners.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '64px 20px', color: 'var(--td)' }}>
-            <User size={48} />
-            <p style={{ fontSize: 15, marginTop: 12 }}>Inga träningspartners hittade med dessa filter</p>
-            <p style={{ fontSize: 13, marginTop: 4 }}>Testa att ändra eller ta bort filter</p>
-          </div>
-        ) : (
-          <>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {partners.map(p => {
-                const isFollowed = followedSet.has(p.username)
-                return (
-                  <div
-                    key={p.username}
-                    style={{
-                      background: 'var(--c)', border: '1px solid var(--br)', borderRadius: 16,
-                      padding: 20, display: 'flex', gap: 16, alignItems: 'flex-start',
-                    }}
-                  >
-                    {/* Avatar */}
-                    <div
-                      onClick={() => nav(`/user/${p.username}`)}
-                      style={{
-                        width: 52, height: 52, borderRadius: '50%', flexShrink: 0, cursor: 'pointer',
-                        background: avatarGradient(p.username),
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: 22, fontWeight: 700, color: '#fff',
-                      }}
-                    >
-                      {p.username?.[0]?.toUpperCase() || '?'}
-                    </div>
+        )}
 
-                    {/* Info */}
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                        <span
-                          onClick={() => nav(`/user/${p.username}`)}
-                          style={{ fontSize: 15, fontWeight: 600, color: 'var(--t)', cursor: 'pointer' }}
-                        >
-                          @{p.username}
-                        </span>
-                        <span style={{
-                          display: 'inline-flex', alignItems: 'center', gap: 3,
-                          padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 700,
-                          background: (LEVEL_COLORS[p.level] || '#888') + '20',
-                          color: LEVEL_COLORS[p.level] || '#888',
-                        }}>
-                          <Zap size={10} /> {p.level}
-                        </span>
-                      </div>
-
-                      {(p.city || p.gym) && (
-                        <div style={{ fontSize: 13, color: 'var(--td)', marginTop: 4 }}>
-                          {[p.city, p.gym].filter(Boolean).join(' · ')}
-                        </div>
-                      )}
-
-                      {p.sports?.length > 0 && (
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 8 }}>
-                          {p.sports.map(s => (
-                            <span key={s} style={{
-                              padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 600,
-                              background: 'rgba(255,69,0,0.08)', color: 'var(--a)',
-                              border: '1px solid rgba(255,69,0,0.15)',
-                            }}>
-                              {s}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-
-                      {/* Actions */}
-                      <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-                        {isFollowed ? (
-                          <span style={{
-                            padding: '6px 16px', borderRadius: 8, fontSize: 13, fontWeight: 600,
-                            background: 'var(--b)', border: '1px solid var(--br)', color: 'var(--ts)',
-                          }}>
-                            Följer
-                          </span>
-                        ) : (
-                          <button
-                            onClick={() => handleFollow(p.username)}
-                            disabled={followLoading === p.username}
-                            style={{
-                              padding: '6px 16px', borderRadius: 8, fontSize: 13, fontWeight: 700,
-                              background: 'var(--a)', color: '#fff', border: 'none', cursor: 'pointer',
-                              fontFamily: 'var(--f)',
-                            }}
-                          >
-                            {followLoading === p.username ? <span className="spinner" style={{ width: 14, height: 14 }} /> : 'Följ'}
-                          </button>
-                        )}
-                        <button
-                          onClick={() => nav(`/messages?to=${p.username}`)}
-                          style={{
-                            padding: '6px 16px', borderRadius: 8, fontSize: 13, fontWeight: 600,
-                            background: 'var(--b)', border: '1px solid var(--br)', color: 'var(--t)',
-                            cursor: 'pointer', fontFamily: 'var(--f)',
-                            display: 'flex', alignItems: 'center', gap: 4,
-                          }}
-                        >
-                          <Mail size={13} /> Meddelande
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-
-            {partners.length < total && (
+        {tab === 'settings' && (
+          <div style={{
+            background: 'var(--c)', border: '1px solid var(--br)', borderRadius: 20,
+            padding: 28,
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
+              <div>
+                <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>Sök träningspartner</div>
+                <div style={{ fontSize: 13, color: 'var(--td)' }}>Slå på för att synas och börja upptäcka</div>
+              </div>
               <button
-                onClick={() => search(partners.length)}
-                disabled={loading}
+                onClick={() => setSeekingPartner(!seekingPartner)}
                 style={{
-                  display: 'block', width: '100%', padding: 14, marginTop: 16,
-                  background: 'var(--c)', border: '1px solid var(--br)', borderRadius: 12,
-                  color: 'var(--ts)', fontSize: 14, fontWeight: 600,
-                  cursor: 'pointer', fontFamily: 'var(--f)',
+                  width: 52, height: 28, borderRadius: 14, border: 'none', cursor: 'pointer',
+                  background: seekingPartner ? 'var(--a)' : 'var(--br)',
+                  position: 'relative', transition: 'background .2s', flexShrink: 0,
                 }}
               >
-                {loading ? <span className="spinner" style={{ width: 16, height: 16 }} /> : 'Visa fler'}
+                <span style={{
+                  position: 'absolute', top: 3, left: seekingPartner ? 27 : 3,
+                  width: 22, height: 22, borderRadius: '50%', background: '#fff',
+                  transition: 'left .2s', boxShadow: '0 1px 3px rgba(0,0,0,.2)',
+                }} />
               </button>
+            </div>
+
+            {seekingPartner && (
+              <div style={{ marginBottom: 24 }}>
+                <label style={{ fontSize: 13, color: 'var(--ts)', display: 'block', marginBottom: 6 }}>
+                  Berätta vad du söker <span style={{ color: 'var(--td)' }}>({seekingText.length}/100)</span>
+                </label>
+                <textarea
+                  value={seekingText}
+                  onChange={e => e.target.value.length <= 100 && setSeekingText(e.target.value)}
+                  placeholder="T.ex. Söker gympartner i Stockholm, helst morgontider"
+                  style={{
+                    width: '100%', minHeight: 80, padding: '12px 14px', borderRadius: 12,
+                    border: '1px solid var(--br)', background: 'var(--b)', color: 'var(--t)',
+                    fontFamily: 'var(--f)', fontSize: 14, resize: 'vertical', outline: 'none',
+                  }}
+                />
+              </div>
+            )}
+
+            <button onClick={saveSettings} disabled={savingSettings} style={{
+              width: '100%', padding: '14px 0', borderRadius: 12, border: 'none',
+              background: 'var(--a)', color: '#fff', fontFamily: 'var(--f)',
+              fontSize: 15, fontWeight: 700, cursor: 'pointer',
+            }}>
+              {savingSettings ? <span className="spinner" style={{ width: 18, height: 18 }} /> : 'Spara'}
+            </button>
+
+            {settingsSaved && (
+              <div style={{ textAlign: 'center', marginTop: 12, color: '#22c55e', fontWeight: 600, fontSize: 14 }}>
+                Inställningar sparade!
+              </div>
+            )}
+          </div>
+        )}
+
+        {tab === 'discover' && (
+          <>
+            {!seekingPartner && !user?.seeking_partner ? (
+              <div style={{
+                textAlign: 'center', padding: '64px 20px',
+                background: 'var(--c)', border: '1px solid var(--br)', borderRadius: 20,
+              }}>
+                <div style={{
+                  width: 72, height: 72, borderRadius: '50%', margin: '0 auto 20px',
+                  background: 'rgba(255,69,0,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <User size={36} />
+                </div>
+                <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>Aktivera partnersökning</h3>
+                <p style={{ color: 'var(--ts)', fontSize: 14, marginBottom: 20 }}>
+                  Slå på sökning under "Min sökning" för att synas och börja upptäcka träningspartners.
+                </p>
+                <button onClick={() => setTab('settings')} style={{
+                  padding: '12px 28px', borderRadius: 999, fontSize: 14, fontWeight: 700,
+                  background: 'var(--a)', color: '#fff', border: 'none', cursor: 'pointer',
+                }}>
+                  Gå till inställningar
+                </button>
+              </div>
+            ) : loading ? (
+              <div style={{ textAlign: 'center', padding: 80 }}>
+                <span className="spinner" style={{ width: 32, height: 32 }} />
+              </div>
+            ) : empty || !partner ? (
+              <div style={{
+                textAlign: 'center', padding: '64px 20px',
+                background: 'var(--c)', border: '1px solid var(--br)', borderRadius: 20,
+              }}>
+                <div style={{ fontSize: 48, marginBottom: 16 }}>🏋️</div>
+                <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>Inga fler partners att visa just nu</h3>
+                <p style={{ color: 'var(--ts)', fontSize: 14, marginBottom: 20 }}>
+                  Kom tillbaka senare!
+                </p>
+                <button onClick={fetchNext} style={{
+                  padding: '10px 24px', borderRadius: 999, fontSize: 14, fontWeight: 600,
+                  background: 'var(--c)', border: '1px solid var(--br)', color: 'var(--t)',
+                  cursor: 'pointer', fontFamily: 'var(--f)',
+                }}>
+                  Försök igen
+                </button>
+              </div>
+            ) : (
+              <>
+                {/* Partner card */}
+                <div
+                  style={{
+                    background: 'var(--c)', border: '1px solid var(--br)', borderRadius: 24,
+                    overflow: 'hidden', position: 'relative',
+                    transition: 'transform 0.3s ease, opacity 0.3s ease',
+                    transform: swipeDir === 'left' ? 'translateX(-120%) rotate(-8deg)'
+                      : swipeDir === 'right' ? 'translateX(120%) rotate(8deg)'
+                      : 'translateX(0)',
+                    opacity: swipeDir ? 0 : 1,
+                  }}
+                >
+                  {/* Avatar area */}
+                  <div
+                    onClick={() => nav(`/user/${partner.username}`)}
+                    style={{
+                      height: 280, cursor: 'pointer', position: 'relative',
+                      background: partner.avatar_url ? `url(${partner.avatar_url}) center/cover` : avatarGradient(partner.username),
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}
+                  >
+                    {!partner.avatar_url && (
+                      <span style={{ fontSize: 96, fontWeight: 800, color: 'rgba(255,255,255,0.7)' }}>
+                        {partner.username?.[0]?.toUpperCase() || '?'}
+                      </span>
+                    )}
+                    <div style={{
+                      position: 'absolute', bottom: 0, left: 0, right: 0, height: 100,
+                      background: 'linear-gradient(to top, var(--c), transparent)',
+                    }} />
+                  </div>
+
+                  {/* Info */}
+                  <div style={{ padding: '0 24px 24px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, flexWrap: 'wrap' }}>
+                      <h2
+                        onClick={() => nav(`/user/${partner.username}`)}
+                        style={{ fontSize: 22, fontWeight: 800, cursor: 'pointer', margin: 0 }}
+                      >
+                        @{partner.username}
+                      </h2>
+                      {partner.age && (
+                        <span style={{ fontSize: 18, color: 'var(--ts)', fontWeight: 500 }}>{partner.age}</span>
+                      )}
+                      <span style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 4,
+                        padding: '3px 10px', borderRadius: 20,
+                        background: 'rgba(255,69,0,0.1)', border: '1px solid rgba(255,69,0,0.2)',
+                        fontSize: 12, fontWeight: 600, color: 'var(--a)',
+                      }}>
+                        <Zap size={12} /> {partner.level}
+                      </span>
+                    </div>
+
+                    {(partner.city || partner.gym) && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, color: 'var(--td)', marginBottom: 12 }}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+                        {[partner.city, partner.gym].filter(Boolean).join(' · ')}
+                      </div>
+                    )}
+
+                    {partner.sports?.length > 0 && (
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 16 }}>
+                        {partner.sports.map(s => (
+                          <span key={s} style={{
+                            padding: '5px 14px', borderRadius: 20, fontSize: 13, fontWeight: 600,
+                            background: 'rgba(255,69,0,0.08)', color: 'var(--a)',
+                            border: '1px solid rgba(255,69,0,0.15)',
+                          }}>
+                            {s}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+
+                    {partner.seeking_partner_text && (
+                      <div style={{
+                        background: 'var(--b)', border: '1px solid var(--br)', borderRadius: 12,
+                        padding: '12px 16px', fontSize: 14, color: 'var(--ts)', lineHeight: 1.5,
+                        fontStyle: 'italic',
+                      }}>
+                        "{partner.seeking_partner_text}"
+                      </div>
+                    )}
+
+                    {/* Message input (shown after clicking contact) */}
+                    {showMsgInput && (
+                      <div style={{ marginTop: 16 }}>
+                        <input
+                          value={contactMsg}
+                          onChange={e => setContactMsg(e.target.value.slice(0, 200))}
+                          placeholder="Skriv ett meddelande (valfritt)..."
+                          style={{
+                            width: '100%', padding: '12px 14px', borderRadius: 12,
+                            border: '1px solid var(--br)', background: 'var(--b)', color: 'var(--t)',
+                            fontFamily: 'var(--f)', fontSize: 14, outline: 'none',
+                          }}
+                          autoFocus
+                          onKeyDown={e => e.key === 'Enter' && handleContact()}
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Action buttons */}
+                <div style={{
+                  display: 'flex', justifyContent: 'center', gap: 24, marginTop: 24,
+                }}>
+                  <button
+                    onClick={handleSkip}
+                    disabled={!!actionLoading}
+                    style={{
+                      width: 64, height: 64, borderRadius: '50%', border: '2px solid var(--br)',
+                      background: 'var(--c)', cursor: 'pointer', display: 'flex',
+                      alignItems: 'center', justifyContent: 'center',
+                      fontSize: 28, transition: 'all 0.2s',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = '#ef4444'; e.currentTarget.style.background = 'rgba(239,68,68,0.1)' }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--br)'; e.currentTarget.style.background = 'var(--c)' }}
+                  >
+                    ❌
+                  </button>
+                  <button
+                    onClick={handleContact}
+                    disabled={!!actionLoading}
+                    style={{
+                      width: 64, height: 64, borderRadius: '50%', border: '2px solid var(--br)',
+                      background: 'var(--c)', cursor: 'pointer', display: 'flex',
+                      alignItems: 'center', justifyContent: 'center',
+                      fontSize: 28, transition: 'all 0.2s',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = '#22c55e'; e.currentTarget.style.background = 'rgba(34,197,94,0.1)' }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--br)'; e.currentTarget.style.background = 'var(--c)' }}
+                  >
+                    ✅
+                  </button>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'center', gap: 48, marginTop: 8 }}>
+                  <span style={{ fontSize: 12, color: 'var(--td)', fontWeight: 600 }}>Hoppa över</span>
+                  <span style={{ fontSize: 12, color: 'var(--td)', fontWeight: 600 }}>Kontakta</span>
+                </div>
+              </>
             )}
           </>
         )}
