@@ -126,4 +126,8 @@ export const api = {
   blockUser: (username) => request(`/moderation/users/${encodeURIComponent(username)}/block`, { method: 'POST' }),
   unblockUser: (username) => request(`/moderation/users/${encodeURIComponent(username)}/block`, { method: 'DELETE' }),
   getBlockedUsers: () => request('/moderation/users/me/blocked'),
+  // Coins & Shop
+  getCoins: (limit = 20, offset = 0) => request(`/users/me/coins?limit=${limit}&offset=${offset}`),
+  getShopItems: () => request('/shop/items'),
+  purchaseItem: (itemId) => request('/shop/purchase', { method: 'POST', body: JSON.stringify({ item_id: itemId }) }),
 }

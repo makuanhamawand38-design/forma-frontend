@@ -34,6 +34,13 @@ export function AuthProvider({ children }) {
     } catch (_) {}
   }
 
+  const refreshProfile = async () => {
+    try {
+      const profile = await api.getProfile()
+      setUser(prev => ({ ...prev, ...profile }))
+    } catch (_) {}
+  }
+
   const logout = () => {
     localStorage.removeItem('forma_token')
     localStorage.removeItem('forma_email')
@@ -41,7 +48,7 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, loading, setUser }}>
+    <AuthContext.Provider value={{ user, login, logout, loading, setUser, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   )

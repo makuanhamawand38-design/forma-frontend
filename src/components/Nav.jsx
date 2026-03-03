@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { api } from '../api'
-import { Zap, Grid, LogOut, Trophy, Mail, Bell, User } from './Icons'
+import { Zap, Grid, LogOut, Trophy, Mail, Bell, User, Coin } from './Icons'
 
 export default function Nav() {
   const { user, logout } = useAuth()
@@ -75,6 +75,11 @@ export default function Nav() {
                       display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px',
                     }}>{notifCount}</span>
                   )}
+                </Link>
+                <Link to="/shop">
+                  <button className={`nav-btn ${path === '/shop' ? 'active' : ''}`} style={{ color: '#FFD700', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <Coin size={16} />{user.coins || 0}
+                  </button>
                 </Link>
                 {(!user.subscription_type || user.subscription_type === 'free') && (
                   <Link to="/pricing"><button className="nav-btn-primary" style={{ padding: '6px 16px', fontSize: 13 }}><Zap size={14} />Uppgradera</button></Link>
@@ -161,6 +166,12 @@ export default function Nav() {
               <Link to="/competitions" onClick={closeMenu} style={{ textDecoration: 'none' }}>
                 <div style={mobileLink(path === '/competitions')}>
                   <Trophy size={16} /> Tävlingar
+                </div>
+              </Link>
+              <Link to="/shop" onClick={closeMenu} style={{ textDecoration: 'none' }}>
+                <div style={{ ...mobileLink(path === '/shop'), color: path === '/shop' ? '#FFD700' : '#FFD700' }}>
+                  <Coin size={16} /> Coin Shop
+                  <span style={{ marginLeft: 'auto', fontWeight: 700, fontSize: 13 }}>{user.coins || 0}</span>
                 </div>
               </Link>
               <Link to="/find-partner" onClick={closeMenu} style={{ textDecoration: 'none' }}>
