@@ -126,6 +126,11 @@ export const api = {
   blockUser: (username) => request(`/moderation/users/${encodeURIComponent(username)}/block`, { method: 'POST' }),
   unblockUser: (username) => request(`/moderation/users/${encodeURIComponent(username)}/block`, { method: 'DELETE' }),
   getBlockedUsers: () => request('/moderation/users/me/blocked'),
+  // Search & Follow requests
+  searchUsers: (q, limit = 10) => request(`/users/search?q=${encodeURIComponent(q)}&limit=${limit}`),
+  getFollowRequests: (limit = 20, offset = 0) => request(`/users/me/follow-requests?limit=${limit}&offset=${offset}`),
+  acceptFollow: (username) => request(`/users/${encodeURIComponent(username)}/accept-follow`, { method: 'POST' }),
+  rejectFollow: (username) => request(`/users/${encodeURIComponent(username)}/reject-follow`, { method: 'POST' }),
   // Coins & Shop
   getCoins: (limit = 20, offset = 0) => request(`/users/me/coins?limit=${limit}&offset=${offset}`),
   getShopItems: () => request('/shop/items'),

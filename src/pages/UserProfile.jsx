@@ -91,6 +91,7 @@ export default function UserProfile() {
   const [profile, setProfile] = useState(null)
   const [error, setError] = useState(null)
   const [following, setFollowing] = useState(false)
+  const [followStatus, setFollowStatus] = useState(null)
   const [followLoading, setFollowLoading] = useState(false)
   const [modal, setModal] = useState(null)
   const [showMenu, setShowMenu] = useState(false)
@@ -107,10 +108,12 @@ export default function UserProfile() {
     setProfile(null)
     setError(null)
     setFollowing(false)
+    setFollowStatus(null)
     api.getPublicProfile(username)
       .then(p => {
         setProfile(p)
         setFollowing(p.is_following || false)
+        setFollowStatus(p.follow_status || null)
       })
       .catch(() => setError('Användaren hittades inte'))
   }, [username])
@@ -119,14 +122,22 @@ export default function UserProfile() {
     if (!user) return nav('/login')
     setFollowLoading(true)
     try {
-      if (following) {
+      if (following || followStatus === 'pending') {
         await api.unfollowUser(username)
+        if (following) {
+          setProfile(p => ({ ...p, followers_count: Math.max(0, (p.followers_count || 0) - 1) }))
+        }
         setFollowing(false)
-        setProfile(p => ({ ...p, followers_count: Math.max(0, (p.followers_count || 0) - 1) }))
+        setFollowStatus(null)
       } else {
-        await api.followUser(username)
-        setFollowing(true)
-        setProfile(p => ({ ...p, followers_count: (p.followers_count || 0) + 1 }))
+        const res = await api.followUser(username)
+        if (res.status === 'pending') {
+          setFollowStatus('pending')
+        } else {
+          setFollowing(true)
+          setFollowStatus('active')
+          setProfile(p => ({ ...p, followers_count: (p.followers_count || 0) + 1 }))
+        }
       }
     } catch (err) {
       // silently ignore (e.g. already following)
@@ -175,13 +186,23 @@ export default function UserProfile() {
   const initial = profile?.username?.[0]?.toUpperCase() || '?'
   const locationParts = [profile?.city, profile?.gym].filter(Boolean)
 
+  const followLabel = followLoading
+    ? <span className="spinner" style={{ width: 16, height: 16 }} />
+    : following ? 'Följer'
+    : followStatus === 'pending' ? 'Begärd'
+    : 'Följ'
+
+  const followBtnClass = following ? 'up-btn-following'
+    : followStatus === 'pending' ? 'up-btn-following'
+    : 'up-btn-follow'
+
   const followBtn = (
     <button
-      className={following ? 'up-btn-following' : 'up-btn-follow'}
+      className={followBtnClass}
       onClick={handleFollow}
       disabled={followLoading}
     >
-      {followLoading ? <span className="spinner" style={{ width: 16, height: 16 }} /> : following ? 'Följer' : 'Följ'}
+      {followLabel}
     </button>
   )
 
@@ -248,10 +269,23 @@ export default function UserProfile() {
                 <div className="up-info">
                   <div className="up-name-row">
                     <h1 className="up-username">@{profile.username}</h1>
-                    <div className="up-level">
-                      <Zap size={14} />
-                      <span>{profile.level}</span>
-                    </div>
+                    {profile.is_private && (
+                      <span style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 4,
+                        padding: '3px 10px', borderRadius: 20,
+                        background: 'rgba(255,255,255,0.06)', border: '1px solid var(--br)',
+                        fontSize: 12, fontWeight: 600, color: 'var(--td)',
+                      }}>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                        Privat
+                      </span>
+                    )}
+                    {!profile.restricted && profile.level && (
+                      <div className="up-level">
+                        <Zap size={14} />
+                        <span>{profile.level}</span>
+                      </div>
+                    )}
                   </div>
 
                   {(profile.first_name || profile.last_name) && (
@@ -269,9 +303,9 @@ export default function UserProfile() {
 
                   {/* Stats - desktop (inline) */}
                   <div className="up-stats-inline">
-                    <span><strong>{profile.posts_count}</strong> inlägg</span>
-                    <span className="up-stat-clickable" onClick={() => setModal('followers')}><strong>{profile.followers_count}</strong> följare</span>
-                    <span className="up-stat-clickable" onClick={() => setModal('following')}><strong>{profile.following_count}</strong> följer</span>
+                    {!profile.restricted && <span><strong>{profile.posts_count}</strong> inlägg</span>}
+                    <span className="up-stat-clickable" onClick={() => !profile.restricted && setModal('followers')} style={profile.restricted ? { cursor: 'default' } : {}}><strong>{profile.followers_count}</strong> följare</span>
+                    <span className="up-stat-clickable" onClick={() => !profile.restricted && setModal('following')} style={profile.restricted ? { cursor: 'default' } : {}}><strong>{profile.following_count}</strong> följer</span>
                   </div>
 
                   {/* Action button - desktop */}
@@ -312,9 +346,9 @@ export default function UserProfile() {
               {/* Stats - mobile (full width) */}
               <div className="up-stats-mobile">
                 {[
-                  { n: profile.posts_count, l: 'inlägg', click: null },
-                  { n: profile.followers_count, l: 'följare', click: () => setModal('followers') },
-                  { n: profile.following_count, l: 'följer', click: () => setModal('following') },
+                  ...(profile.restricted ? [] : [{ n: profile.posts_count, l: 'inlägg', click: null }]),
+                  { n: profile.followers_count, l: 'följare', click: profile.restricted ? null : () => setModal('followers') },
+                  { n: profile.following_count, l: 'följer', click: profile.restricted ? null : () => setModal('following') },
                 ].map((s, i) => (
                   <div key={i} className={`up-stat-cell${s.click ? ' up-stat-clickable' : ''}`} onClick={s.click}>
                     <div className="up-stat-num">{s.n}</div>
@@ -356,54 +390,73 @@ export default function UserProfile() {
                 )}
               </div>
 
-              {/* Bio */}
-              {profile.bio && (
-                <p className="up-bio">{profile.bio}</p>
-              )}
-
-              {/* Sports badges */}
-              {profile.sports?.length > 0 && (
-                <div className="up-sports">
-                  {profile.sports.map(s => (
-                    <span key={s} className="up-sport-badge">{s}</span>
-                  ))}
-                </div>
-              )}
-
-              {/* XP bar */}
-              <div className="up-xp-row">
-                <Zap size={14} />
-                <span className="up-xp-text">{profile.xp} XP</span>
-                {profile.created_at && (
-                  <>
-                    <span className="up-xp-dot">·</span>
-                    <span className="up-xp-text">
-                      Medlem sedan {new Date(profile.created_at).toLocaleDateString('sv-SE', { year: 'numeric', month: 'long' })}
-                    </span>
-                  </>
-                )}
-              </div>
-
-              {/* Posts grid */}
-              <div className="up-divider" />
-              <div className="up-posts-header">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-                <span>INLÄGG</span>
-              </div>
-
-              {profile.posts_count > 0 ? (
-                <div className="up-posts-grid">
-                  {/* Posts will be rendered here */}
-                </div>
-              ) : (
-                <div className="up-no-posts">
+              {/* Private profile notice */}
+              {profile.restricted && (
+                <div style={{
+                  textAlign: 'center', padding: '48px 20px', marginTop: 24,
+                  border: '1px solid var(--br)', borderRadius: 16, background: 'var(--c)',
+                }}>
                   <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--td)" strokeWidth="1.5">
-                    <rect x="3" y="3" width="18" height="18" rx="2"/>
-                    <circle cx="8.5" cy="8.5" r="1.5"/>
-                    <path d="m21 15-5-5L5 21"/>
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
                   </svg>
-                  <p>Inga inlägg ännu</p>
+                  <p style={{ color: 'var(--ts)', fontSize: 15, marginTop: 16, marginBottom: 4, fontWeight: 600 }}>Det här kontot är privat</p>
+                  <p style={{ color: 'var(--td)', fontSize: 13 }}>Följ detta konto för att se inlägg och detaljer</p>
                 </div>
+              )}
+
+              {!profile.restricted && (
+                <>
+                  {/* Bio */}
+                  {profile.bio && (
+                    <p className="up-bio">{profile.bio}</p>
+                  )}
+
+                  {/* Sports badges */}
+                  {profile.sports?.length > 0 && (
+                    <div className="up-sports">
+                      {profile.sports.map(s => (
+                        <span key={s} className="up-sport-badge">{s}</span>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* XP bar */}
+                  <div className="up-xp-row">
+                    <Zap size={14} />
+                    <span className="up-xp-text">{profile.xp} XP</span>
+                    {profile.created_at && (
+                      <>
+                        <span className="up-xp-dot">·</span>
+                        <span className="up-xp-text">
+                          Medlem sedan {new Date(profile.created_at).toLocaleDateString('sv-SE', { year: 'numeric', month: 'long' })}
+                        </span>
+                      </>
+                    )}
+                  </div>
+
+                  {/* Posts grid */}
+                  <div className="up-divider" />
+                  <div className="up-posts-header">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+                    <span>INLÄGG</span>
+                  </div>
+
+                  {profile.posts_count > 0 ? (
+                    <div className="up-posts-grid">
+                      {/* Posts will be rendered here */}
+                    </div>
+                  ) : (
+                    <div className="up-no-posts">
+                      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--td)" strokeWidth="1.5">
+                        <rect x="3" y="3" width="18" height="18" rx="2"/>
+                        <circle cx="8.5" cy="8.5" r="1.5"/>
+                        <path d="m21 15-5-5L5 21"/>
+                      </svg>
+                      <p>Inga inlägg ännu</p>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </>

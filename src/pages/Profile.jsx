@@ -32,6 +32,7 @@ export default function Profile() {
   const [weight, setWeight] = useState('')
   const [height, setHeight] = useState('')
   const [displayNamePublic, setDisplayNamePublic] = useState(false)
+  const [isPrivate, setIsPrivate] = useState(false)
   const [usernameInput, setUsernameInput] = useState('')
   const [usernameStatus, setUsernameStatus] = useState('idle')
   const [usernameHint, setUsernameHint] = useState('')
@@ -54,6 +55,7 @@ export default function Profile() {
       setFirstName(p.first_name || '')
       setLastName(p.last_name || '')
       setDisplayNamePublic(p.display_name_public || false)
+      setIsPrivate(p.is_private || false)
       setUsernameChangedAt(p.username_changed_at || null)
       setBio(p.bio || '')
       setCity(p.city || '')
@@ -138,6 +140,7 @@ export default function Profile() {
         first_name: firstName || undefined,
         last_name: lastName || undefined,
         display_name_public: displayNamePublic,
+        is_private: isPrivate,
         bio: bio || undefined,
         city: city || undefined,
         gym: gym || undefined,
@@ -341,6 +344,30 @@ export default function Profile() {
                     >
                       <span style={{
                         position: 'absolute', top: 2, left: displayNamePublic ? 22 : 2,
+                        width: 20, height: 20, borderRadius: '50%', background: '#fff',
+                        transition: 'left .2s', boxShadow: '0 1px 3px rgba(0,0,0,.2)',
+                      }} />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="profile-field">
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div>
+                      <div className="profile-label" style={{ marginBottom: 2 }}>Privat profil</div>
+                      <div style={{ fontSize: 12, color: 'var(--td)' }}>Bara godkända följare kan se dina inlägg och detaljer</div>
+                    </div>
+                    <button
+                      onClick={() => editing && setIsPrivate(!isPrivate)}
+                      disabled={!editing}
+                      style={{
+                        width: 44, height: 24, borderRadius: 12, border: 'none', cursor: editing ? 'pointer' : 'default',
+                        background: isPrivate ? 'var(--a)' : 'var(--br)',
+                        position: 'relative', transition: 'background .2s', flexShrink: 0,
+                      }}
+                    >
+                      <span style={{
+                        position: 'absolute', top: 2, left: isPrivate ? 22 : 2,
                         width: 20, height: 20, borderRadius: '50%', background: '#fff',
                         transition: 'left .2s', boxShadow: '0 1px 3px rgba(0,0,0,.2)',
                       }} />

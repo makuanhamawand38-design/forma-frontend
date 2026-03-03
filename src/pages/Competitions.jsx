@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { api } from '../api'
 import Nav from '../components/Nav'
@@ -129,6 +129,7 @@ export default function Competitions() {
                       <span style={{ fontSize: 24 }}>{TYPE_ICONS[c.type] || '⚡'}</span>
                       <h3 style={{ fontSize: 18, fontWeight: 700 }}>{c.title}</h3>
                       {c.auto && <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 6, background: 'rgba(255,69,0,0.1)', color: 'var(--a)', fontWeight: 600 }}>Auto</span>}
+                      {c.visibility === 'private' && <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 6, background: 'rgba(255,255,255,0.08)', color: 'var(--ts)', fontWeight: 600 }}>Privat</span>}
                     </div>
                     {c.description && <p style={{ color: 'var(--ts)', fontSize: 14, marginBottom: 12 }}>{c.description}</p>}
                     <div style={{ display: 'flex', gap: 16, fontSize: 13, color: 'var(--td)', flexWrap: 'wrap' }}>
@@ -276,16 +277,44 @@ function CreateCompetitionModal({ onClose, onCreated }) {
   const [type, setType] = useState('xp')
   const [scope, setScope] = useState('sweden')
   const [duration, setDuration] = useState(7)
+  const [visibility, setVisibility] = useState('public')
+  const [inviteQuery, setInviteQuery] = useState('')
+  const [inviteResults, setInviteResults] = useState([])
+  const [invitedUsers, setInvitedUsers] = useState([])
+  const [searchLoading, setSearchLoading] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const searchRef = useRef(null)
+
+  useEffect(() => {
+    if (searchRef.current) clearTimeout(searchRef.current)
+    if (!inviteQuery.trim() || visibility !== 'private') { setInviteResults([]); return }
+    setSearchLoading(true)
+    searchRef.current = setTimeout(() => {
+      api.searchUsers(inviteQuery.trim()).then(setInviteResults).catch(() => setInviteResults([])).finally(() => setSearchLoading(false))
+    }, 300)
+    return () => clearTimeout(searchRef.current)
+  }, [inviteQuery, visibility])
+
+  const addInvite = (username) => {
+    if (!invitedUsers.includes(username)) setInvitedUsers([...invitedUsers, username])
+    setInviteQuery('')
+    setInviteResults([])
+  }
+
+  const removeInvite = (username) => setInvitedUsers(invitedUsers.filter(u => u !== username))
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!title.trim()) { setError('Titel krävs'); return }
+    if (visibility === 'private' && invitedUsers.length === 0) { setError('Bjud in minst en person till en privat tävling'); return }
     setLoading(true)
     setError('')
     try {
-      await api.createCompetition({ title: title.trim(), description: description.trim(), type, scope, duration_days: duration })
+      await api.createCompetition({
+        title: title.trim(), description: description.trim(), type, scope,
+        duration_days: duration, visibility, invited_users: visibility === 'private' ? invitedUsers : [],
+      })
       onCreated()
     } catch (err) { setError(err.message); setLoading(false) }
   }
@@ -298,7 +327,7 @@ function CreateCompetitionModal({ onClose, onCreated }) {
     }} onClick={onClose}>
       <div style={{
         background: 'var(--c)', border: '1px solid var(--br)', borderRadius: 24,
-        padding: 32, maxWidth: 460, width: '90%',
+        padding: 32, maxWidth: 460, width: '90%', maxHeight: '85vh', overflowY: 'auto',
       }} onClick={e => e.stopPropagation()}>
         <button onClick={onClose} style={{
           float: 'right', background: 'none', border: 'none', color: 'var(--ts)',
@@ -353,6 +382,79 @@ function CreateCompetitionModal({ onClose, onCreated }) {
               ))}
             </div>
           </div>
+
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ fontSize: 13, color: 'var(--ts)', display: 'block', marginBottom: 6 }}>Synlighet</label>
+            <div style={{ display: 'flex', gap: 8 }}>
+              {[['public', 'Publik'], ['private', 'Privat']].map(([k, v]) => (
+                <button key={k} type="button" onClick={() => setVisibility(k)} style={{
+                  flex: 1, padding: '10px 0', borderRadius: 10, border: 'none', cursor: 'pointer',
+                  fontFamily: 'var(--f)', fontSize: 13, fontWeight: visibility === k ? 700 : 500,
+                  background: visibility === k ? 'rgba(255,69,0,0.15)' : 'var(--b)',
+                  color: visibility === k ? 'var(--a)' : 'var(--ts)',
+                }}>
+                  {k === 'private' ? '🔒 ' : '🌐 '}{v}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {visibility === 'private' && (
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ fontSize: 13, color: 'var(--ts)', display: 'block', marginBottom: 6 }}>Bjud in användare</label>
+              <div style={{ position: 'relative' }}>
+                <input
+                  value={inviteQuery}
+                  onChange={e => setInviteQuery(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+                  placeholder="Sök användarnamn..."
+                  className="auth-input"
+                  style={{ width: '100%' }}
+                  autoComplete="off"
+                />
+                {inviteQuery && inviteResults.length > 0 && (
+                  <div style={{
+                    position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 10,
+                    background: 'var(--c)', border: '1px solid var(--br)', borderRadius: 10,
+                    maxHeight: 200, overflowY: 'auto', marginTop: 4,
+                    boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+                  }}>
+                    {inviteResults.filter(u => !invitedUsers.includes(u.username)).map(u => (
+                      <div key={u.username} onClick={() => addInvite(u.username)} style={{
+                        padding: '10px 14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10,
+                        fontSize: 14, color: 'var(--t)', transition: 'background 0.15s',
+                      }}
+                        onMouseEnter={e => e.currentTarget.style.background = 'var(--s)'}
+                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                      >
+                        <div style={{
+                          width: 28, height: 28, borderRadius: '50%', background: 'var(--a)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          color: '#fff', fontWeight: 700, fontSize: 12, flexShrink: 0,
+                        }}>{u.username[0].toUpperCase()}</div>
+                        @{u.username}
+                        {u.city && <span style={{ fontSize: 12, color: 'var(--td)', marginLeft: 'auto' }}>{u.city}</span>}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {searchLoading && <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)' }} className="spinner" />}
+              </div>
+              {invitedUsers.length > 0 && (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
+                  {invitedUsers.map(u => (
+                    <span key={u} style={{
+                      display: 'inline-flex', alignItems: 'center', gap: 6,
+                      padding: '4px 10px', borderRadius: 20, fontSize: 13, fontWeight: 600,
+                      background: 'rgba(255,69,0,0.1)', color: 'var(--a)', border: '1px solid rgba(255,69,0,0.2)',
+                    }}>
+                      @{u}
+                      <span onClick={() => removeInvite(u)} style={{ cursor: 'pointer', fontSize: 16, lineHeight: 1 }}>&times;</span>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           <div style={{ marginBottom: 24 }}>
             <label style={{ fontSize: 13, color: 'var(--ts)', display: 'block', marginBottom: 6 }}>Varaktighet (dagar)</label>
