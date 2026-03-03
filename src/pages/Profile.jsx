@@ -507,16 +507,6 @@ export default function Profile() {
                 </div>
               )}
 
-              {profile.has_discount && (
-                <div className="profile-card" style={{ marginBottom: 24 }}>
-                  <h3>Rabattstatus</h3>
-                  <div style={{ background: 'rgba(255,69,0,0.1)', border: '1px solid rgba(255,69,0,0.2)', borderRadius: 12, padding: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <Zap size={24} />
-                    <div><div style={{ fontWeight: 600, marginBottom: 2 }}>20% rabatt tillgänglig!</div><div style={{ fontSize: 13, color: 'var(--ts)' }}>Från slutfört program. Gäller nästa köp.</div></div>
-                  </div>
-                </div>
-              )}
-
               {referralData && (
                 <div className="profile-card" style={{ marginBottom: 24 }}>
                   <h3>Referral-program</h3>
@@ -525,29 +515,57 @@ export default function Profile() {
                   </p>
 
                   {/* Referral code */}
-                  <div style={{
-                    display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16,
-                    background: 'var(--b)', border: '1px solid var(--br)', borderRadius: 12, padding: '12px 16px',
-                  }}>
-                    <span style={{ flex: 1, fontFamily: 'monospace', fontSize: 18, fontWeight: 700, letterSpacing: 2, color: 'var(--a)' }}>
-                      {referralData.referral_code}
-                    </span>
-                    <button
-                      onClick={() => {
-                        navigator.clipboard.writeText(referralData.referral_code)
-                        setCopied(true)
-                        setTimeout(() => setCopied(false), 2000)
-                      }}
-                      style={{
-                        padding: '8px 16px', borderRadius: 8, border: 'none', cursor: 'pointer',
-                        fontFamily: 'var(--f)', fontSize: 13, fontWeight: 600,
-                        background: copied ? 'rgba(34,197,94,0.15)' : 'var(--a)',
-                        color: copied ? '#22c55e' : '#fff',
-                        transition: 'all 0.2s',
-                      }}
-                    >
-                      {copied ? 'Kopierad!' : 'Kopiera'}
-                    </button>
+                  <div style={{ marginBottom: 8 }}>
+                    <div style={{ fontSize: 12, color: 'var(--td)', marginBottom: 6, fontWeight: 600 }}>Din kod</div>
+                    <div style={{
+                      display: 'flex', alignItems: 'center', gap: 8,
+                      background: 'var(--b)', border: '1px solid var(--br)', borderRadius: 12, padding: '12px 16px',
+                    }}>
+                      <span style={{ flex: 1, fontFamily: 'monospace', fontSize: 20, fontWeight: 700, letterSpacing: 2, color: 'var(--a)' }}>
+                        {referralData.referral_code || profile?.referral_code || '...'}
+                      </span>
+                      <button
+                        onClick={() => {
+                          const code = referralData.referral_code || profile?.referral_code
+                          if (code) { navigator.clipboard.writeText(code); setCopied(true); setTimeout(() => setCopied(false), 2000) }
+                        }}
+                        style={{
+                          padding: '8px 16px', borderRadius: 8, border: 'none', cursor: 'pointer',
+                          fontFamily: 'var(--f)', fontSize: 13, fontWeight: 600,
+                          background: copied ? 'rgba(34,197,94,0.15)' : 'var(--a)',
+                          color: copied ? '#22c55e' : '#fff',
+                          transition: 'all 0.2s',
+                        }}
+                      >
+                        {copied ? 'Kopierad!' : 'Kopiera'}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Referral link */}
+                  <div style={{ marginBottom: 16 }}>
+                    <div style={{ fontSize: 12, color: 'var(--td)', marginBottom: 6, fontWeight: 600 }}>Referral-länk</div>
+                    <div style={{
+                      display: 'flex', alignItems: 'center', gap: 8,
+                      background: 'var(--b)', border: '1px solid var(--br)', borderRadius: 12, padding: '10px 16px',
+                    }}>
+                      <span style={{ flex: 1, fontSize: 13, color: 'var(--ts)', wordBreak: 'break-all', fontFamily: 'monospace' }}>
+                        formafitness.se/register?ref={referralData.referral_code || profile?.referral_code || '...'}
+                      </span>
+                      <button
+                        onClick={() => {
+                          const code = referralData.referral_code || profile?.referral_code
+                          if (code) { navigator.clipboard.writeText(`https://www.formafitness.se/register?ref=${code}`); setCopied(true); setTimeout(() => setCopied(false), 2000) }
+                        }}
+                        style={{
+                          padding: '6px 12px', borderRadius: 6, border: '1px solid var(--br)', cursor: 'pointer',
+                          fontFamily: 'var(--f)', fontSize: 12, fontWeight: 600,
+                          background: 'none', color: 'var(--ts)', flexShrink: 0,
+                        }}
+                      >
+                        Kopiera länk
+                      </button>
+                    </div>
                   </div>
 
                   {/* Stats */}
