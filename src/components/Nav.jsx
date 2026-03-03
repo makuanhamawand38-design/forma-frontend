@@ -121,9 +121,10 @@ export default function Nav() {
         position: 'fixed', top: 60, right: 0, zIndex: 1000,
         background: '#1a1a2e', border: '1px solid var(--br)',
         borderRadius: '0 0 0 14px', padding: menuOpen ? '16px 24px' : '0',
-        maxHeight: menuOpen ? 400 : 0, overflow: 'hidden',
-        transition: 'all 0.3s ease', width: 220,
+        maxHeight: menuOpen ? 'calc(100vh - 60px)' : 0, overflowY: menuOpen ? 'auto' : 'hidden',
+        transition: 'max-height 0.3s ease, padding 0.3s ease', width: 220,
         boxShadow: menuOpen ? '0 8px 30px rgba(0,0,0,0.5)' : 'none',
+        WebkitOverflowScrolling: 'touch',
       }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {user ? (

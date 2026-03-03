@@ -181,7 +181,7 @@ export default function Messages() {
   return (
     <div>
       <Nav />
-      <div style={{ maxWidth: 900, margin: '0 auto', minHeight: 'calc(100vh - 60px)', display: 'flex' }}>
+      <div style={{ maxWidth: 900, margin: '0 auto', height: 'calc(100vh - 60px)', display: 'flex', overflow: 'hidden' }}>
         {/* Conversation list */}
         <div style={{
           width: activeConv ? undefined : '100%',
@@ -190,6 +190,8 @@ export default function Messages() {
           borderRight: activeConv ? '1px solid var(--br)' : 'none',
           display: activeConv ? undefined : 'block',
           flexShrink: 0,
+          overflowY: 'auto',
+          WebkitOverflowScrolling: 'touch',
         }} className={activeConv ? 'dm-list-desktop' : ''}>
           <div style={{ padding: '20px 16px 12px', borderBottom: '1px solid var(--br)' }}>
             <h2 style={{ fontSize: 20, fontWeight: 700, margin: 0 }}>Meddelanden</h2>
@@ -265,7 +267,7 @@ export default function Messages() {
 
         {/* Chat view */}
         {activeConv && (
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, height: '100%', overflow: 'hidden' }}>
             {/* Chat header */}
             <div style={{
               display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px',
