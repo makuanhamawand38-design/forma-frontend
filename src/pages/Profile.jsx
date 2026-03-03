@@ -45,7 +45,8 @@ export default function Profile() {
   const [gym, setGym] = useState('')
   const [sports, setSports] = useState([])
   const [referralData, setReferralData] = useState(null)
-  const [copied, setCopied] = useState(false)
+  const [copiedCode, setCopiedCode] = useState(false)
+  const [copiedLink, setCopiedLink] = useState(false)
   const [blockedUsers, setBlockedUsers] = useState([])
   const [showBlocked, setShowBlocked] = useState(false)
 
@@ -525,19 +526,35 @@ export default function Profile() {
                         {referralData.referral_code || profile?.referral_code || '...'}
                       </span>
                       <button
-                        onClick={() => {
+                        onClick={async () => {
                           const code = referralData.referral_code || profile?.referral_code
-                          if (code) { navigator.clipboard.writeText(code); setCopied(true); setTimeout(() => setCopied(false), 2000) }
+                          if (!code) return
+                          try {
+                            if (navigator.clipboard && navigator.clipboard.writeText) {
+                              await navigator.clipboard.writeText(code)
+                            } else {
+                              const ta = document.createElement('textarea')
+                              ta.value = code
+                              ta.style.position = 'fixed'
+                              ta.style.opacity = '0'
+                              document.body.appendChild(ta)
+                              ta.select()
+                              document.execCommand('copy')
+                              document.body.removeChild(ta)
+                            }
+                            setCopiedCode(true)
+                            setTimeout(() => setCopiedCode(false), 2000)
+                          } catch {}
                         }}
                         style={{
                           padding: '8px 16px', borderRadius: 8, border: 'none', cursor: 'pointer',
                           fontFamily: 'var(--f)', fontSize: 13, fontWeight: 600,
-                          background: copied ? 'rgba(34,197,94,0.15)' : 'var(--a)',
-                          color: copied ? '#22c55e' : '#fff',
+                          background: copiedCode ? 'rgba(34,197,94,0.15)' : 'var(--a)',
+                          color: copiedCode ? '#22c55e' : '#fff',
                           transition: 'all 0.2s',
                         }}
                       >
-                        {copied ? 'Kopierad!' : 'Kopiera'}
+                        {copiedCode ? 'Kopierad!' : 'Kopiera'}
                       </button>
                     </div>
                   </div>
@@ -553,17 +570,36 @@ export default function Profile() {
                         formafitness.se/register?ref={referralData.referral_code || profile?.referral_code || '...'}
                       </span>
                       <button
-                        onClick={() => {
+                        onClick={async () => {
                           const code = referralData.referral_code || profile?.referral_code
-                          if (code) { navigator.clipboard.writeText(`https://www.formafitness.se/register?ref=${code}`); setCopied(true); setTimeout(() => setCopied(false), 2000) }
+                          if (!code) return
+                          const url = `https://www.formafitness.se/register?ref=${code}`
+                          try {
+                            if (navigator.clipboard && navigator.clipboard.writeText) {
+                              await navigator.clipboard.writeText(url)
+                            } else {
+                              const ta = document.createElement('textarea')
+                              ta.value = url
+                              ta.style.position = 'fixed'
+                              ta.style.opacity = '0'
+                              document.body.appendChild(ta)
+                              ta.select()
+                              document.execCommand('copy')
+                              document.body.removeChild(ta)
+                            }
+                            setCopiedLink(true)
+                            setTimeout(() => setCopiedLink(false), 2000)
+                          } catch {}
                         }}
                         style={{
                           padding: '6px 12px', borderRadius: 6, border: '1px solid var(--br)', cursor: 'pointer',
                           fontFamily: 'var(--f)', fontSize: 12, fontWeight: 600,
-                          background: 'none', color: 'var(--ts)', flexShrink: 0,
+                          background: copiedLink ? 'rgba(34,197,94,0.1)' : 'none',
+                          color: copiedLink ? '#22c55e' : 'var(--ts)', flexShrink: 0,
+                          transition: 'all 0.2s',
                         }}
                       >
-                        Kopiera länk
+                        {copiedLink ? 'Kopierad!' : 'Kopiera länk'}
                       </button>
                     </div>
                   </div>
