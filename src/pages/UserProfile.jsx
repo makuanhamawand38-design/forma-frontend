@@ -456,6 +456,7 @@ export default function UserProfile() {
         .up-cover {
           height: 180px;
           position: relative;
+          z-index: 0;
           background: linear-gradient(135deg, #1a1a2e 0%, #16213e 40%, #0f3460 70%, #1a1a2e 100%);
           overflow: hidden;
         }
@@ -488,6 +489,8 @@ export default function UserProfile() {
           max-width: 700px;
           margin: 0 auto;
           padding: 0 20px 48px;
+          position: relative;
+          z-index: 1;
         }
 
         .up-header {
@@ -841,13 +844,13 @@ export default function UserProfile() {
         }
 
         @media (max-width: 600px) {
-          .up-cover { height: 120px; }
+          .up-cover { height: 140px; }
 
           .up-header {
             flex-direction: column;
             align-items: center;
             text-align: center;
-            margin-top: -52px;
+            margin-top: -48px;
             gap: 0;
           }
 
