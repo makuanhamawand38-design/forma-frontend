@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { api } from '../api'
 import Nav from '../components/Nav'
+import CreatePostFab from '../components/CreatePostFab'
 import { Zap, Mail } from '../components/Icons'
 
 const AVATAR_COLORS = [
@@ -409,6 +410,8 @@ export default function UserProfile() {
           </>
         )}
       </div>
+
+      {isOwn && <CreatePostFab onCreated={() => setProfile(p => p ? { ...p, posts_count: (p.posts_count || 0) + 1 } : p)} />}
 
       {modal && <FollowListModal username={username} type={modal} onClose={() => setModal(null)} />}
 

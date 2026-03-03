@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { api } from '../api'
 import Nav from '../components/Nav'
+import CreatePostFab from '../components/CreatePostFab'
 
 const AVATAR_COLORS = [
   ['#ff4500', '#ff6b35'], ['#6366f1', '#818cf8'], ['#ec4899', '#f472b6'],
@@ -513,6 +514,8 @@ export default function Feed() {
       </div>
 
       {showCreateModal && <CreatePostModal onClose={() => setShowCreateModal(false)} onCreated={handlePostCreated} />}
+
+      <CreatePostFab onCreated={handlePostCreated} />
 
       <style>{`
         .feed-main {
