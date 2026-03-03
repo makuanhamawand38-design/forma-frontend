@@ -129,6 +129,13 @@ export default function Nav() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {user ? (
             <>
+              {user.username && (
+                <Link to={`/user/${user.username}`} onClick={closeMenu} style={{ textDecoration: 'none' }}>
+                  <div style={mobileLink(path.startsWith('/user/'))}>
+                    <User size={16} /> <span style={{ color: 'var(--a)', fontWeight: 600 }}>@{user.username}</span>
+                  </div>
+                </Link>
+              )}
               <Link to="/feed" onClick={closeMenu} style={{ textDecoration: 'none' }}>
                 <div style={mobileLink(path === '/feed')}>Flöde</div>
               </Link>
@@ -181,13 +188,6 @@ export default function Nav() {
                     background: 'rgba(255,69,0,0.1)', color: 'var(--a)', fontWeight: 600,
                   }}>
                     <Zap size={16} /> Uppgradera
-                  </div>
-                </Link>
-              )}
-              {user.username && (
-                <Link to={`/user/${user.username}`} onClick={closeMenu} style={{ textDecoration: 'none' }}>
-                  <div style={mobileLink(path.startsWith('/user/'))}>
-                    <span style={{ color: 'var(--a)', fontWeight: 600 }}>@{user.username}</span>
                   </div>
                 </Link>
               )}
