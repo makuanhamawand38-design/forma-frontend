@@ -131,8 +131,19 @@ export default function Nav() {
             <>
               {user.username && (
                 <Link to={`/user/${user.username}`} onClick={closeMenu} style={{ textDecoration: 'none' }}>
-                  <div style={mobileLink(path.startsWith('/user/'))}>
-                    <User size={16} /> <span style={{ color: 'var(--a)', fontWeight: 600 }}>@{user.username}</span>
+                  <div style={{
+                    display: 'flex', alignItems: 'center', gap: 10, padding: '12px 8px',
+                    borderRadius: 8, marginBottom: 4,
+                    background: path.startsWith('/user/') ? 'rgba(255,69,0,0.08)' : 'rgba(255,255,255,0.04)',
+                  }}>
+                    <div style={{
+                      width: 32, height: 32, borderRadius: '50%', background: 'var(--a)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      color: '#fff', fontWeight: 700, fontSize: 14, flexShrink: 0,
+                    }}>
+                      {user.username[0].toUpperCase()}
+                    </div>
+                    <span style={{ color: 'var(--a)', fontWeight: 600, fontSize: 15 }}>@{user.username}</span>
                   </div>
                 </Link>
               )}

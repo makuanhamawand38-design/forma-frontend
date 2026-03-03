@@ -24,10 +24,14 @@ export function AuthProvider({ children }) {
     setLoading(false)
   }, [])
 
-  const login = (token, email) => {
+  const login = async (token, email) => {
     localStorage.setItem('forma_token', token)
     localStorage.setItem('forma_email', email)
     setUser({ email, token })
+    try {
+      const profile = await api.getProfile()
+      setUser(prev => ({ ...prev, ...profile }))
+    } catch (_) {}
   }
 
   const logout = () => {
