@@ -34,8 +34,8 @@ function ProtectedRoute({ children }) {
 function GlobalFab() {
   const { user } = useAuth()
   const { pathname } = useLocation()
-  const hide = ['/messages', '/shop', '/login', '/register', '/', '/pricing', '/forgot-password', '/reset-password', '/villkor', '/guidelines']
-  if (!user || hide.includes(pathname)) return null
+  const show = pathname === '/feed' || pathname === '/explore' || (pathname.startsWith('/user/') && user?.username && pathname === `/user/${user.username}`)
+  if (!user || !show) return null
   return <CreatePostFab />
 }
 

@@ -84,7 +84,18 @@ export default function Nav() {
                 {(!user.subscription_type || user.subscription_type === 'free') && (
                   <Link to="/pricing"><button className="nav-btn-primary" style={{ padding: '6px 16px', fontSize: 13 }}><Zap size={14} />Uppgradera</button></Link>
                 )}
-                {user.username && <Link to={`/user/${user.username}`}><button className={`nav-btn ${path.startsWith('/user/') ? 'active' : ''}`} style={{ color: 'var(--a)', fontWeight: 600 }}>@{user.username}</button></Link>}
+                {user.username && (
+                  <Link to={`/user/${user.username}`} style={{ textDecoration: 'none' }}>
+                    <button className={`nav-btn ${path.startsWith('/user/') ? 'active' : ''}`} style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--a)', fontWeight: 600 }}>
+                      <div style={{
+                        width: 22, height: 22, borderRadius: '50%', background: 'var(--a)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        color: '#fff', fontWeight: 700, fontSize: 11, flexShrink: 0,
+                      }}>{user.username[0].toUpperCase()}</div>
+                      @{user.username}
+                    </button>
+                  </Link>
+                )}
                 <button className="nav-btn" onClick={logout}><LogOut size={16} /></button>
               </>
             ) : (
