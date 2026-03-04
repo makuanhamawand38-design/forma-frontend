@@ -129,4 +129,8 @@ export const api = {
   getCoins: (limit = 20, offset = 0) => request(`/users/me/coins?limit=${limit}&offset=${offset}`),
   getShopItems: () => request('/shop/items'),
   purchaseItem: (itemId) => request('/shop/purchase', { method: 'POST', body: JSON.stringify({ item_id: itemId }) }),
+  // Streaks
+  getStreaks: () => request('/streaks'),
+  getStreak: (username) => request(`/streaks/${encodeURIComponent(username)}`),
+  startStreak: (username) => request(`/streaks/${encodeURIComponent(username)}/start`, { method: 'POST' }),
 }

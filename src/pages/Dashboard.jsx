@@ -37,6 +37,7 @@ export default function Dashboard() {
   const [suggested, setSuggested] = useState([])
   const [feedPosts, setFeedPosts] = useState([])
   const [coins, setCoins] = useState(null)
+  const [streaks, setStreaks] = useState([])
 
   useEffect(() => {
     Promise.all([
@@ -45,12 +46,14 @@ export default function Dashboard() {
       api.getSuggestedUsers().catch(() => []),
       api.getFeed(3, 0).catch(() => ({ posts: [] })),
       api.getCoins(1, 0).catch(() => ({ balance: 0 })),
-    ]).then(([p, prof, sug, feed, coinData]) => {
+      api.getStreaks().catch(() => ({ streaks: [] })),
+    ]).then(([p, prof, sug, feed, coinData, streakData]) => {
       setPrograms(p)
       setProfile(prof)
       setSuggested(sug)
       setFeedPosts(Array.isArray(feed) ? feed.slice(0, 3) : (feed.posts || []).slice(0, 3))
       setCoins(coinData?.balance ?? coinData?.coins ?? 0)
+      setStreaks(streakData?.streaks || [])
     }).finally(() => setLoading(false))
   }, [])
 
@@ -163,6 +166,49 @@ export default function Dashboard() {
 
         {/* XP System */}
         {!loading && <XpBar />}
+
+        {/* Training Streaks */}
+        {!loading && streaks.length > 0 && (
+          <div style={{ marginBottom: 24 }}>
+            <h2 style={{ fontSize: 16, fontWeight: 600, color: 'var(--ts)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 20 }}>🔥</span> Träningsstreaks
+            </h2>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {streaks.map(s => (
+                <div key={s.id} onClick={() => nav(`/user/${s.partner.username}`)} style={{
+                  background: s.at_risk ? 'rgba(245,158,11,0.08)' : 'rgba(255,69,0,0.06)',
+                  border: s.at_risk ? '1px solid rgba(245,158,11,0.3)' : '1px solid rgba(255,69,0,0.15)',
+                  borderRadius: 12, padding: '12px 16px', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', gap: 12, transition: 'border-color 0.2s',
+                }}
+                  onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--a)'}
+                  onMouseLeave={e => e.currentTarget.style.borderColor = s.at_risk ? 'rgba(245,158,11,0.3)' : 'rgba(255,69,0,0.15)'}
+                >
+                  <div style={{ fontSize: 28, lineHeight: 1 }}>🔥</div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ fontSize: 20, fontWeight: 800, color: 'var(--a)' }}>{s.current_streak}</span>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--t)' }}>dagar med @{s.partner.username}</span>
+                    </div>
+                    <div style={{ fontSize: 11, color: 'var(--td)', marginTop: 2 }}>
+                      {s.i_trained_today && s.partner_trained_today ? 'Båda har tränat idag!' :
+                       s.i_trained_today ? 'Du har tränat — väntar på partnern' :
+                       s.partner_trained_today ? 'Partnern har tränat — din tur!' : 'Ingen har tränat idag'}
+                    </div>
+                  </div>
+                  {s.at_risk && (
+                    <span style={{
+                      fontSize: 11, fontWeight: 700, color: '#f59e0b', background: 'rgba(245,158,11,0.15)',
+                      padding: '4px 10px', borderRadius: 20, whiteSpace: 'nowrap',
+                    }}>
+                      Risk!
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Feed preview */}
         {!loading && feedPosts.length > 0 && (

@@ -99,6 +99,8 @@ export default function UserProfile() {
   const [showBlockConfirm, setShowBlockConfirm] = useState(false)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const [uploadingCover, setUploadingCover] = useState(false)
+  const [streakData, setStreakData] = useState(null)
+  const [streakLoading, setStreakLoading] = useState(false)
   const avatarRef = useRef(null)
   const coverRef = useRef(null)
 
@@ -109,6 +111,7 @@ export default function UserProfile() {
     setError(null)
     setFollowing(false)
     setFollowStatus(null)
+    setStreakData(null)
     api.getPublicProfile(username)
       .then(p => {
         setProfile(p)
@@ -116,6 +119,9 @@ export default function UserProfile() {
         setFollowStatus(p.follow_status || null)
       })
       .catch(() => setError('Användaren hittades inte'))
+    if (user && user.username !== username) {
+      api.getStreak(username).then(d => setStreakData(d.streak)).catch(() => {})
+    }
   }, [username])
 
   const handleFollow = async () => {
@@ -159,6 +165,19 @@ export default function UserProfile() {
       setShowBlockConfirm(false)
       nav('/feed')
     } catch (e) { alert(e.message) }
+  }
+
+  const handleStartStreak = async () => {
+    if (!user) return nav('/login')
+    setStreakLoading(true)
+    try {
+      await api.startStreak(username)
+      const d = await api.getStreak(username)
+      setStreakData(d.streak)
+    } catch (err) {
+      alert(err.message)
+    }
+    setStreakLoading(false)
   }
 
   const handleAvatarUpload = async (e) => {
@@ -308,6 +327,18 @@ export default function UserProfile() {
                     <span className="up-stat-clickable" onClick={() => !profile.restricted && setModal('following')} style={profile.restricted ? { cursor: 'default' } : {}}><strong>{profile.following_count}</strong> följer</span>
                   </div>
 
+                  {/* Streak indicator */}
+                  {!isOwn && streakData && streakData.current_streak > 0 && (
+                    <div style={{
+                      display: 'inline-flex', alignItems: 'center', gap: 6,
+                      padding: '6px 14px', borderRadius: 20, marginTop: 12,
+                      background: 'rgba(255,69,0,0.1)', border: '1px solid rgba(255,69,0,0.2)',
+                      fontSize: 13, fontWeight: 700, color: 'var(--a)',
+                    }}>
+                      🔥 {streakData.current_streak} dagars streak
+                    </div>
+                  )}
+
                   {/* Action button - desktop */}
                   <div className="up-action-desktop">
                     {isOwn ? (
@@ -322,6 +353,16 @@ export default function UserProfile() {
                             style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
                           >
                             <Mail size={14} /> Meddelande
+                          </button>
+                        )}
+                        {user && !streakData && (
+                          <button
+                            className="up-btn-edit"
+                            onClick={handleStartStreak}
+                            disabled={streakLoading}
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                          >
+                            {streakLoading ? <span className="spinner" style={{ width: 14, height: 14 }} /> : <>🔥 Starta streak</>}
                           </button>
                         )}
                         {user && (
@@ -362,15 +403,25 @@ export default function UserProfile() {
                 {isOwn ? (
                   <button className="up-btn-edit" onClick={() => nav('/profile')}>Redigera profil</button>
                 ) : (
-                  <div style={{ display: 'flex', gap: 8, width: '100%' }}>
-                    <div style={{ flex: 1 }}>{followBtn}</div>
+                  <div style={{ display: 'flex', gap: 8, width: '100%', flexWrap: 'wrap' }}>
+                    <div style={{ flex: 1, minWidth: '45%' }}>{followBtn}</div>
                     {user && (
                       <button
                         className="up-btn-edit"
                         onClick={() => nav(`/messages?to=${profile.username}`)}
-                        style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                        style={{ flex: 1, minWidth: '45%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
                       >
                         <Mail size={14} /> Meddelande
+                      </button>
+                    )}
+                    {user && !streakData && (
+                      <button
+                        className="up-btn-edit"
+                        onClick={handleStartStreak}
+                        disabled={streakLoading}
+                        style={{ flex: 1, minWidth: '45%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                      >
+                        {streakLoading ? <span className="spinner" style={{ width: 14, height: 14 }} /> : <>🔥 Streak</>}
                       </button>
                     )}
                     {user && (

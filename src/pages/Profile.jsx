@@ -49,8 +49,10 @@ export default function Profile() {
   const [copiedLink, setCopiedLink] = useState(false)
   const [blockedUsers, setBlockedUsers] = useState([])
   const [showBlocked, setShowBlocked] = useState(false)
+  const [streaks, setStreaks] = useState([])
 
   useEffect(() => {
+    api.getStreaks().then(d => setStreaks(d.streaks || [])).catch(() => {})
     api.getProfile().then(p => {
       setProfile(p)
       setFirstName(p.first_name || '')
@@ -504,6 +506,36 @@ export default function Profile() {
                         Avsluta prenumeration
                       </button>
                     )}
+                  </div>
+                </div>
+              )}
+
+              {streaks.length > 0 && (
+                <div className="profile-card" style={{ marginBottom: 24 }}>
+                  <h3 style={{ display: 'flex', alignItems: 'center', gap: 8 }}>🔥 Träningsstreaks</h3>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {streaks.map(s => (
+                      <div key={s.id} style={{
+                        display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px',
+                        borderRadius: 10, background: s.at_risk ? 'rgba(245,158,11,0.08)' : 'rgba(255,69,0,0.06)',
+                        border: s.at_risk ? '1px solid rgba(245,158,11,0.2)' : '1px solid rgba(255,69,0,0.15)',
+                      }}>
+                        <span style={{ fontSize: 24 }}>🔥</span>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--a)' }}>
+                            {s.current_streak} dagars streak med @{s.partner.username}
+                          </div>
+                          <div style={{ fontSize: 11, color: 'var(--td)', marginTop: 2 }}>
+                            Längsta: {s.longest_streak} dagar
+                          </div>
+                        </div>
+                        {s.at_risk && (
+                          <span style={{ fontSize: 11, fontWeight: 700, color: '#f59e0b', background: 'rgba(245,158,11,0.15)', padding: '3px 8px', borderRadius: 12 }}>
+                            Risk!
+                          </span>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
