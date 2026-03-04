@@ -14,9 +14,7 @@ export function AuthProvider({ children }) {
       api.getProfile().then(profile => {
         setUser({ email, token, ...profile })
       }).catch(() => {
-        localStorage.removeItem('forma_token')
-        localStorage.removeItem('forma_email')
-        setUser(null)
+        setUser({ email, token })
       }).finally(() => {
         setLoading(false)
       })
@@ -28,8 +26,12 @@ export function AuthProvider({ children }) {
   const login = async (token, email) => {
     localStorage.setItem('forma_token', token)
     localStorage.setItem('forma_email', email)
-    const profile = await api.getProfile()
-    setUser({ email, token, ...profile })
+    try {
+      const profile = await api.getProfile()
+      setUser({ email, token, ...profile })
+    } catch (_) {
+      setUser({ email, token })
+    }
   }
 
   const refreshProfile = async () => {

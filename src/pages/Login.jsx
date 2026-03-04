@@ -18,7 +18,7 @@ export default function Login() {
     setLoading(true)
     try {
       const data = await api.login(identifier, pw)
-      login(data.token, data.email)
+      await login(data.token, data.email)
       nav('/feed')
     } catch (err) {
       setError(err.message)

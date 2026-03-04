@@ -84,7 +84,7 @@ export default function Register() {
     setLoading(true)
     try {
       const data = await api.register(email, pw, username.trim().toLowerCase(), referralCode.trim() || undefined)
-      login(data.token, data.email)
+      await login(data.token, data.email)
       nav('/feed')
     } catch (err) {
       setError(err.message)
