@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../context/AuthContext'
+import { useSearchParams } from 'react-router-dom'
 import { api } from '../api'
 import Nav from '../components/Nav'
 import Footer from '../components/Footer'
@@ -27,6 +28,7 @@ function timeLeft(endDate) {
 
 export default function Competitions() {
   const { user } = useAuth()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [competitions, setCompetitions] = useState([])
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState('active')
@@ -35,6 +37,21 @@ export default function Competitions() {
   const [detailLoading, setDetailLoading] = useState(false)
   const [joining, setJoining] = useState(null)
   const [showCreate, setShowCreate] = useState(false)
+  const [challenges, setChallenges] = useState([])
+  const [challengesLoading, setChallengesLoading] = useState(true)
+  const [challengeDetail, setChallengeDetail] = useState(null)
+  const [showChallengeCreate, setShowChallengeCreate] = useState(false)
+  const [challengeTarget, setChallengeTarget] = useState(null)
+
+  // Auto-open challenge modal if ?challenge=username is in URL
+  useEffect(() => {
+    const target = searchParams.get('challenge')
+    if (target) {
+      setChallengeTarget(target)
+      setShowChallengeCreate(true)
+      setSearchParams({}, { replace: true })
+    }
+  }, [])
 
   const fetchList = (status) => {
     setLoading(true)
@@ -42,6 +59,26 @@ export default function Competitions() {
   }
 
   useEffect(() => { fetchList(tab) }, [tab])
+
+  const fetchChallenges = () => {
+    setChallengesLoading(true)
+    api.getChallenges('all').then(setChallenges).catch(() => {}).finally(() => setChallengesLoading(false))
+  }
+  useEffect(() => { fetchChallenges() }, [])
+
+  const handleAccept = async (id) => {
+    try {
+      await api.acceptChallenge(id)
+      fetchChallenges()
+    } catch (e) { alert(e.message) }
+  }
+
+  const handleDecline = async (id) => {
+    try {
+      await api.declineChallenge(id)
+      fetchChallenges()
+    } catch (e) { alert(e.message) }
+  }
 
   const openDetail = async (id) => {
     setSelectedComp(id)
@@ -166,6 +203,132 @@ export default function Competitions() {
         )}
       </div>
 
+      {/* Challenges section */}
+      <div style={{ maxWidth: 900, margin: '0 auto', padding: '0 24px 48px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
+          <h2 style={{ fontSize: 24, fontWeight: 700, letterSpacing: -0.3 }}>Utmaningar</h2>
+          <button onClick={() => setShowChallengeCreate(true)} style={{
+            background: 'var(--c)', color: 'var(--t)', border: '1px solid var(--br)', borderRadius: 999,
+            padding: '8px 20px', fontSize: 13, fontWeight: 700, cursor: 'pointer',
+            display: 'flex', alignItems: 'center', gap: 6,
+          }}>
+            + Utmana en vän
+          </button>
+        </div>
+
+        {challengesLoading ? (
+          <div style={{ textAlign: 'center', padding: 32 }}><span className="spinner" style={{ width: 24, height: 24 }} /></div>
+        ) : challenges.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: 32 }}>
+            <div style={{ fontSize: 40, marginBottom: 12 }}>⚔️</div>
+            <p style={{ color: 'var(--ts)', fontSize: 14 }}>Inga utmaningar ännu. Utmana en vän!</p>
+          </div>
+        ) : (
+          <div style={{ display: 'grid', gap: 12 }}>
+            {challenges.map(ch => {
+              const isPending = ch.status === 'pending'
+              const isActive = ch.status === 'active'
+              const isCompleted = ch.status === 'completed'
+              const canRespond = isPending && !ch.is_challenger
+
+              return (
+                <div key={ch.id} style={{
+                  background: 'var(--c)', border: '1px solid var(--br)', borderRadius: 16,
+                  padding: 20, transition: 'border-color 0.2s',
+                }}
+                  onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(255,69,0,0.3)'}
+                  onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--br)'}
+                >
+                  {/* Title row */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', gap: 12, marginBottom: 12, flexWrap: 'wrap' }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                        <span style={{ fontSize: 20 }}>{TYPE_ICONS[ch.type] || '⚔️'}</span>
+                        <span style={{ fontSize: 15, fontWeight: 700 }}>{ch.title}</span>
+                      </div>
+                      <div style={{ fontSize: 12, color: 'var(--td)' }}>
+                        {TYPE_LABELS[ch.type] || ch.type} · {ch.duration_days} dagar
+                        {ch.end_date && isActive && ` · ${timeLeft(ch.end_date)}`}
+                      </div>
+                    </div>
+                    <div style={{
+                      fontSize: 12, fontWeight: 600, padding: '4px 12px', borderRadius: 999,
+                      background: isActive ? 'rgba(34,197,94,0.15)' : isPending ? 'rgba(234,179,8,0.15)' : 'rgba(255,255,255,0.05)',
+                      color: isActive ? 'var(--suc)' : isPending ? '#eab308' : 'var(--td)',
+                    }}>
+                      {isActive ? 'Pågår' : isPending ? 'Väntande' : isCompleted ? 'Avslutad' : ch.status}
+                    </div>
+                  </div>
+
+                  {/* VS score display */}
+                  {(isActive || isCompleted) && (
+                    <div style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16,
+                      padding: '16px 12px', borderRadius: 12, background: 'var(--b)', marginBottom: 12,
+                    }}>
+                      <div style={{ textAlign: 'center', flex: 1 }}>
+                        <div style={{ fontSize: 11, color: 'var(--td)', marginBottom: 4 }}>Du</div>
+                        <div style={{
+                          fontSize: 28, fontWeight: 800, letterSpacing: -1,
+                          color: ch.my_score >= ch.opponent_score ? 'var(--a)' : 'var(--t)',
+                        }}>{ch.my_score}</div>
+                        <div style={{ fontSize: 11, color: 'var(--td)' }}>XP</div>
+                      </div>
+                      <div style={{
+                        fontSize: 18, fontWeight: 800, color: 'var(--td)',
+                        padding: '6px 12px', borderRadius: 8, background: 'rgba(255,255,255,0.04)',
+                      }}>VS</div>
+                      <div style={{ textAlign: 'center', flex: 1 }}>
+                        <div style={{ fontSize: 11, color: 'var(--td)', marginBottom: 4 }}>@{ch.opponent_username}</div>
+                        <div style={{
+                          fontSize: 28, fontWeight: 800, letterSpacing: -1,
+                          color: ch.opponent_score > ch.my_score ? 'var(--a)' : 'var(--t)',
+                        }}>{ch.opponent_score}</div>
+                        <div style={{ fontSize: 11, color: 'var(--td)' }}>XP</div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Winner badge */}
+                  {isCompleted && ch.i_won !== null && (
+                    <div style={{
+                      textAlign: 'center', padding: '8px 0', fontSize: 14, fontWeight: 700,
+                      color: ch.i_won ? 'var(--suc)' : ch.i_won === false ? '#ef4444' : 'var(--td)',
+                    }}>
+                      {ch.i_won ? '🏆 Du vann!' : ch.i_won === false ? 'Du förlorade' : 'Oavgjort'}
+                    </div>
+                  )}
+
+                  {/* Pending: accept/decline */}
+                  {canRespond && (
+                    <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+                      <button onClick={() => handleAccept(ch.id)} style={{
+                        flex: 1, padding: '10px 0', borderRadius: 10, border: 'none',
+                        background: 'var(--a)', color: '#fff', fontFamily: 'var(--f)',
+                        fontSize: 14, fontWeight: 700, cursor: 'pointer',
+                      }}>Acceptera</button>
+                      <button onClick={() => handleDecline(ch.id)} style={{
+                        flex: 1, padding: '10px 0', borderRadius: 10,
+                        background: 'var(--b)', color: 'var(--ts)', fontFamily: 'var(--f)',
+                        fontSize: 14, fontWeight: 600, cursor: 'pointer',
+                        border: '1px solid var(--br)',
+                      }}>Neka</button>
+                    </div>
+                  )}
+
+                  {/* Pending: waiting for response */}
+                  {isPending && ch.is_challenger && (
+                    <div style={{ fontSize: 12, color: 'var(--td)', textAlign: 'center', marginTop: 4 }}>
+                      Väntar på svar från @{ch.opponent_username}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
+
       {/* Competition detail modal */}
       {selectedComp && (
         <div style={{
@@ -265,6 +428,9 @@ export default function Competitions() {
 
       {/* Create competition modal */}
       {showCreate && <CreateCompetitionModal onClose={() => setShowCreate(false)} onCreated={() => { setShowCreate(false); fetchList(tab) }} />}
+
+      {/* Create challenge modal */}
+      {showChallengeCreate && <CreateChallengeModal defaultUser={challengeTarget} onClose={() => { setShowChallengeCreate(false); setChallengeTarget(null) }} onCreated={() => { setShowChallengeCreate(false); setChallengeTarget(null); fetchChallenges() }} />}
 
       <Footer />
     </>
@@ -464,6 +630,146 @@ function CreateCompetitionModal({ onClose, onCreated }) {
 
           <button type="submit" disabled={loading} className="auth-btn">
             {loading ? <span className="spinner" /> : 'Skapa tävling'}
+          </button>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+function CreateChallengeModal({ onClose, onCreated, defaultUser }) {
+  const [type, setType] = useState('xp')
+  const [duration, setDuration] = useState(7)
+  const [query, setQuery] = useState('')
+  const [results, setResults] = useState([])
+  const [selectedUser, setSelectedUser] = useState(defaultUser || null)
+  const [searchLoading, setSearchLoading] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const searchRef = useRef(null)
+
+  useEffect(() => {
+    if (searchRef.current) clearTimeout(searchRef.current)
+    if (!query.trim()) { setResults([]); return }
+    setSearchLoading(true)
+    searchRef.current = setTimeout(() => {
+      api.searchUsers(query.trim()).then(setResults).catch(() => setResults([])).finally(() => setSearchLoading(false))
+    }, 300)
+    return () => clearTimeout(searchRef.current)
+  }, [query])
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    if (!selectedUser) { setError('Välj en motståndare'); return }
+    setLoading(true)
+    setError('')
+    try {
+      await api.createChallenge({ username: selectedUser, type, duration_days: duration })
+      onCreated()
+    } catch (err) { setError(err.message); setLoading(false) }
+  }
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 9999,
+      background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+    }} onClick={onClose}>
+      <div style={{
+        background: 'var(--c)', border: '1px solid var(--br)', borderRadius: 24,
+        padding: 32, maxWidth: 420, width: '90%', maxHeight: '85vh', overflowY: 'auto',
+      }} onClick={e => e.stopPropagation()}>
+        <button onClick={onClose} style={{
+          float: 'right', background: 'none', border: 'none', color: 'var(--ts)',
+          fontSize: 24, cursor: 'pointer', lineHeight: 1,
+        }}>&times;</button>
+
+        <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 24 }}>Utmana en vän</h2>
+
+        {error && <div className="auth-error">{error}</div>}
+
+        <form onSubmit={handleSubmit}>
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ fontSize: 13, color: 'var(--ts)', display: 'block', marginBottom: 6 }}>Motståndare</label>
+            {selectedUser ? (
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px',
+                background: 'var(--b)', borderRadius: 10, border: '1px solid var(--br)',
+              }}>
+                <div style={{
+                  width: 28, height: 28, borderRadius: '50%', background: 'var(--a)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  color: '#fff', fontWeight: 700, fontSize: 12, flexShrink: 0,
+                }}>{selectedUser[0].toUpperCase()}</div>
+                <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--t)', flex: 1 }}>@{selectedUser}</span>
+                <button type="button" onClick={() => { setSelectedUser(null); setQuery('') }} style={{
+                  background: 'none', border: 'none', color: 'var(--td)', fontSize: 18, cursor: 'pointer',
+                }}>&times;</button>
+              </div>
+            ) : (
+              <div style={{ position: 'relative' }}>
+                <input
+                  value={query}
+                  onChange={e => setQuery(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+                  placeholder="Sök användarnamn..."
+                  className="auth-input"
+                  style={{ width: '100%' }}
+                  autoComplete="off"
+                />
+                {query && results.length > 0 && (
+                  <div style={{
+                    position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 10,
+                    background: 'var(--c)', border: '1px solid var(--br)', borderRadius: 10,
+                    maxHeight: 200, overflowY: 'auto', marginTop: 4,
+                    boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+                  }}>
+                    {results.map(u => (
+                      <div key={u.username} onClick={() => { setSelectedUser(u.username); setQuery(''); setResults([]) }} style={{
+                        padding: '10px 14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10,
+                        fontSize: 14, color: 'var(--t)', transition: 'background 0.15s',
+                      }}
+                        onMouseEnter={e => e.currentTarget.style.background = 'var(--s)'}
+                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                      >
+                        <div style={{
+                          width: 28, height: 28, borderRadius: '50%', background: 'var(--a)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          color: '#fff', fontWeight: 700, fontSize: 12, flexShrink: 0,
+                        }}>{u.username[0].toUpperCase()}</div>
+                        @{u.username}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {searchLoading && <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)' }} className="spinner" />}
+              </div>
+            )}
+          </div>
+
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ fontSize: 13, color: 'var(--ts)', display: 'block', marginBottom: 6 }}>Typ av utmaning</label>
+            <div style={{ display: 'flex', gap: 8 }}>
+              {Object.entries(TYPE_LABELS).map(([k, v]) => (
+                <button key={k} type="button" onClick={() => setType(k)} style={{
+                  flex: 1, padding: '10px 0', borderRadius: 10, border: 'none', cursor: 'pointer',
+                  fontFamily: 'var(--f)', fontSize: 13, fontWeight: type === k ? 700 : 500,
+                  background: type === k ? 'rgba(255,69,0,0.15)' : 'var(--b)',
+                  color: type === k ? 'var(--a)' : 'var(--ts)',
+                }}>
+                  {TYPE_ICONS[k]} {v}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div style={{ marginBottom: 24 }}>
+            <label style={{ fontSize: 13, color: 'var(--ts)', display: 'block', marginBottom: 6 }}>Varaktighet (dagar)</label>
+            <input type="number" value={duration} onChange={e => setDuration(Math.max(1, Math.min(30, +e.target.value)))}
+              min="1" max="30" className="auth-input" style={{ width: 120 }} />
+          </div>
+
+          <button type="submit" disabled={loading} className="auth-btn">
+            {loading ? <span className="spinner" /> : 'Skicka utmaning'}
           </button>
         </form>
       </div>

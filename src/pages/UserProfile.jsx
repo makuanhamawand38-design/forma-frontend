@@ -366,6 +366,15 @@ export default function UserProfile() {
                           </button>
                         )}
                         {user && (
+                          <button
+                            className="up-btn-edit"
+                            onClick={() => nav(`/competitions?challenge=${profile.username}`)}
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                          >
+                            ⚔️ Utmana
+                          </button>
+                        )}
+                        {user && (
                           <div style={{ position: 'relative' }}>
                             <button className="up-btn-edit" onClick={() => setShowMenu(!showMenu)} style={{ padding: '8px 10px' }}>
                               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
@@ -422,6 +431,15 @@ export default function UserProfile() {
                         style={{ flex: 1, minWidth: '45%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
                       >
                         {streakLoading ? <span className="spinner" style={{ width: 14, height: 14 }} /> : <>🔥 Streak</>}
+                      </button>
+                    )}
+                    {user && (
+                      <button
+                        className="up-btn-edit"
+                        onClick={() => nav(`/competitions?challenge=${profile.username}`)}
+                        style={{ flex: 1, minWidth: '45%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                      >
+                        ⚔️ Utmana
                       </button>
                     )}
                     {user && (

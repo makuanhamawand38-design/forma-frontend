@@ -133,4 +133,10 @@ export const api = {
   getStreaks: () => request('/streaks'),
   getStreak: (username) => request(`/streaks/${encodeURIComponent(username)}`),
   startStreak: (username) => request(`/streaks/${encodeURIComponent(username)}/start`, { method: 'POST' }),
+  // Challenges
+  getChallenges: (status = 'all') => request(`/challenges?status=${status}`),
+  getChallenge: (id) => request(`/challenges/${id}`),
+  createChallenge: (data) => request('/challenges', { method: 'POST', body: JSON.stringify(data) }),
+  acceptChallenge: (id) => request(`/challenges/${id}/accept`, { method: 'POST' }),
+  declineChallenge: (id) => request(`/challenges/${id}/decline`, { method: 'POST' }),
 }
