@@ -5,7 +5,7 @@ import { api } from '../api'
 import { Zap, Grid, LogOut, Trophy, Mail, Bell, User, Coin } from './Icons'
 
 export default function Nav() {
-  const { user, logout } = useAuth()
+  const { user, logout, refreshProfile } = useAuth()
   const location = useLocation()
   const path = location.pathname
   const [menuOpen, setMenuOpen] = useState(false)
@@ -13,6 +13,17 @@ export default function Nav() {
   const [notifCount, setNotifCount] = useState(0)
   const pollRef = useRef(null)
   const notifPollRef = useRef(null)
+
+  // Debug: log user object to verify username is present
+  console.log('[Nav] user:', user)
+
+  // If user is logged in but profile wasn't loaded (no username), retry once
+  useEffect(() => {
+    if (user && !user.username) {
+      console.log('[Nav] user exists but no username, refreshing profile...')
+      refreshProfile()
+    }
+  }, [user])
 
   const isPremium = user && user.subscription_type && user.subscription_type !== 'free'
 

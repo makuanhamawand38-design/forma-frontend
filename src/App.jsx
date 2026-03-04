@@ -67,6 +67,7 @@ export default function App() {
       <Route path="/shop" element={<ProtectedRoute><Shop /></ProtectedRoute>} />
       <Route path="/badges" element={<ProtectedRoute><Badges /></ProtectedRoute>} />
       <Route path="/log" element={<ProtectedRoute><WorkoutLog /></ProtectedRoute>} />
+      <Route path="/training" element={<ProtectedRoute><WorkoutLog /></ProtectedRoute>} />
       <Route path="/goals" element={<ProtectedRoute><Goals /></ProtectedRoute>} />
       <Route path="/weekly-summary" element={<ProtectedRoute><WeeklySummary /></ProtectedRoute>} />
       <Route path="/guidelines" element={<Guidelines />} />
