@@ -106,9 +106,13 @@ export const api = {
   getMessages: (conversationId, limit = 50, offset = 0) => request(`/dm/conversations/${conversationId}/messages?limit=${limit}&offset=${offset}`),
   sendMessage: (conversationId, text) => request(`/dm/conversations/${conversationId}/messages`, { method: 'POST', body: JSON.stringify({ text }) }),
   // Notifications
-  getNotifications: (limit = 30, offset = 0) => request(`/notifications?limit=${limit}&offset=${offset}`),
+  getNotifications: (limit = 30, offset = 0, type = null) => request(`/notifications?limit=${limit}&offset=${offset}${type ? `&notif_type=${type}` : ''}`),
   markNotificationsRead: () => request('/notifications/read-all', { method: 'PUT' }),
+  markNotificationRead: (id) => request(`/notifications/${id}/read`, { method: 'PUT' }),
+  deleteNotification: (id) => request(`/notifications/${id}`, { method: 'DELETE' }),
+  clearAllNotifications: () => request('/notifications', { method: 'DELETE' }),
   getNotifUnreadCount: () => request('/notifications/unread-count'),
+  getActivity: (limit = 30, offset = 0) => request(`/notifications/activity?limit=${limit}&offset=${offset}`),
   // Partners
   searchPartners: () => request('/partners/search'),
   contactPartner: (username, message = '') => request(`/partners/${encodeURIComponent(username)}/contact`, { method: 'POST', body: JSON.stringify({ message }) }),
