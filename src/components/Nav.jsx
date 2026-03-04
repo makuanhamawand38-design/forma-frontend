@@ -14,13 +14,9 @@ export default function Nav() {
   const pollRef = useRef(null)
   const notifPollRef = useRef(null)
 
-  // Debug: log user object to verify username is present
-  console.log('[Nav] user:', user)
-
   // If user is logged in but profile wasn't loaded (no username), retry once
   useEffect(() => {
     if (user && !user.username) {
-      console.log('[Nav] user exists but no username, refreshing profile...')
       refreshProfile()
     }
   }, [user])

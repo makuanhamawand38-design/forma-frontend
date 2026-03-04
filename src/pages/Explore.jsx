@@ -28,15 +28,20 @@ function timeAgo(dateStr) {
   return new Date(dateStr).toLocaleDateString('sv-SE', { day: 'numeric', month: 'short' })
 }
 
-function Avatar({ username, avatarUrl, size = 36, fontSize = 14 }) {
-  if (avatarUrl) {
-    return <img src={avatarUrl} alt="" style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
-  }
+function AvatarInitial({ username, size = 36, fontSize = 14 }) {
   return (
     <div style={{ width: size, height: size, borderRadius: '50%', background: avatarGradient(username), display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize, fontWeight: 700, color: '#fff', flexShrink: 0 }}>
       {(username || '?')[0].toUpperCase()}
     </div>
   )
+}
+
+function Avatar({ username, avatarUrl, size = 36, fontSize = 14 }) {
+  const [imgError, setImgError] = useState(false)
+  if (avatarUrl && !imgError) {
+    return <img src={avatarUrl} alt="" onError={() => setImgError(true)} style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
+  }
+  return <AvatarInitial username={username} size={size} fontSize={fontSize} />
 }
 
 function MediaCarousel({ images, videoUrl }) {
