@@ -167,4 +167,6 @@ export const api = {
   deleteGoal: (id) => request(`/goals/${id}`, { method: 'DELETE' }),
   completeGoal: (id, auto_post = false) => request(`/goals/${id}/complete`, { method: 'POST', body: JSON.stringify({ auto_post }) }),
   getUserGoals: (username) => request(`/goals/public/${encodeURIComponent(username)}`),
+  // Weekly Summary
+  getWeeklySummary: () => request('/users/me/weekly-summary'),
 }

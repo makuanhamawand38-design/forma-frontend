@@ -25,6 +25,7 @@ import Shop from './pages/Shop'
 import Badges from './pages/Badges'
 import WorkoutLog from './pages/WorkoutLog'
 import Goals from './pages/Goals'
+import WeeklySummary from './pages/WeeklySummary'
 import CookieConsent from './components/CookieConsent'
 
 function ProtectedRoute({ children }) {
@@ -67,6 +68,7 @@ export default function App() {
       <Route path="/badges" element={<ProtectedRoute><Badges /></ProtectedRoute>} />
       <Route path="/log" element={<ProtectedRoute><WorkoutLog /></ProtectedRoute>} />
       <Route path="/goals" element={<ProtectedRoute><Goals /></ProtectedRoute>} />
+      <Route path="/weekly-summary" element={<ProtectedRoute><WeeklySummary /></ProtectedRoute>} />
       <Route path="/guidelines" element={<Guidelines />} />
       <Route path="/villkor" element={<Terms />} />
       <Route path="*" element={<NotFound />} />

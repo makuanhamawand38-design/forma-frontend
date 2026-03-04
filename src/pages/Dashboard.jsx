@@ -6,6 +6,7 @@ import Nav from '../components/Nav'
 import { productIcon, catBg, Sparkle, Play, CheckCircle, Zap } from '../components/Icons'
 import { XpBar } from '../components/XpSystem'
 import Leaderboard from '../components/Leaderboard'
+import { WeeklySummaryCard } from './WeeklySummary'
 
 const NAMES = { training: "4 Veckors Träningsprogram", nutrition: "4 Veckors Kostschema", bundle: "8 Veckors Träning + Kost" }
 
@@ -192,6 +193,9 @@ export default function Dashboard() {
 
         {/* XP System */}
         {!loading && <XpBar />}
+
+        {/* Weekly Summary (Sun/Mon) */}
+        {!loading && <WeeklySummaryCard />}
 
         {/* Gym Check-in */}
         {!loading && profile && (
