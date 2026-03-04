@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { api } from '../api'
 import Nav from '../components/Nav'
@@ -50,9 +51,12 @@ export default function Profile() {
   const [blockedUsers, setBlockedUsers] = useState([])
   const [showBlocked, setShowBlocked] = useState(false)
   const [streaks, setStreaks] = useState([])
+  const [badgeData, setBadgeData] = useState(null)
+  const nav = useNavigate()
 
   useEffect(() => {
     api.getStreaks().then(d => setStreaks(d.streaks || [])).catch(() => {})
+    api.getBadges().then(setBadgeData).catch(() => {})
     api.getProfile().then(p => {
       setProfile(p)
       setFirstName(p.first_name || '')
@@ -552,6 +556,41 @@ export default function Profile() {
                       <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--t)' }}>Totala check-ins</div>
                       {profile.gym && <div style={{ fontSize: 12, color: 'var(--td)' }}>{profile.gym}</div>}
                     </div>
+                  </div>
+                </div>
+              )}
+
+              {badgeData && badgeData.unlocked_count > 0 && (
+                <div className="profile-card" style={{ marginBottom: 24 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                    <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>🏅 Badges</h3>
+                    <button onClick={() => nav('/badges')} style={{
+                      background: 'none', border: 'none', cursor: 'pointer',
+                      fontFamily: 'var(--f)', fontSize: 13, fontWeight: 600, color: 'var(--a)',
+                    }}>Visa alla →</button>
+                  </div>
+                  <div style={{ fontSize: 13, color: 'var(--ts)', marginBottom: 12 }}>
+                    {badgeData.unlocked_count}/{badgeData.total} upplasta
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                    {badgeData.badges.filter(b => b.unlocked).slice(0, 15).map(b => (
+                      <div key={b.id} title={`${b.name} — ${b.desc}`} style={{
+                        width: 38, height: 38, borderRadius: 10,
+                        background: b.rarity === 'legendary' ? 'rgba(245,158,11,0.12)' :
+                                   b.rarity === 'epic' ? 'rgba(168,85,247,0.12)' :
+                                   b.rarity === 'rare' ? 'rgba(59,130,246,0.12)' :
+                                   b.rarity === 'uncommon' ? 'rgba(34,197,94,0.12)' : 'rgba(156,163,175,0.12)',
+                        border: `1px solid ${
+                          b.rarity === 'legendary' ? 'rgba(245,158,11,0.3)' :
+                          b.rarity === 'epic' ? 'rgba(168,85,247,0.3)' :
+                          b.rarity === 'rare' ? 'rgba(59,130,246,0.3)' :
+                          b.rarity === 'uncommon' ? 'rgba(34,197,94,0.3)' : 'rgba(156,163,175,0.3)'}`,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: 18, cursor: 'default',
+                      }}>
+                        {b.icon}
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}

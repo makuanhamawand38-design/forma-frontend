@@ -148,6 +148,7 @@ export default function Dashboard() {
               { label: 'Flöde', icon: '📰', path: '/feed' },
               { label: 'Logga pass', icon: '💪', path: '/feed' },
               { label: 'Tävlingar', icon: '🏆', path: '/competitions' },
+              { label: 'Badges', icon: '🏅', path: '/badges' },
               { label: 'Butik', icon: '🛍️', path: '/shop' },
             ].map(link => (
               <button key={link.label} onClick={() => nav(link.path)} style={{

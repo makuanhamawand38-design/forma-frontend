@@ -101,6 +101,7 @@ export default function UserProfile() {
   const [uploadingCover, setUploadingCover] = useState(false)
   const [streakData, setStreakData] = useState(null)
   const [streakLoading, setStreakLoading] = useState(false)
+  const [userBadges, setUserBadges] = useState(null)
   const avatarRef = useRef(null)
   const coverRef = useRef(null)
 
@@ -112,6 +113,8 @@ export default function UserProfile() {
     setFollowing(false)
     setFollowStatus(null)
     setStreakData(null)
+    setUserBadges(null)
+    api.getUserBadges(username).then(setUserBadges).catch(() => {})
     api.getPublicProfile(username)
       .then(p => {
         setProfile(p)
@@ -499,6 +502,53 @@ export default function UserProfile() {
                       fontSize: 13, fontWeight: 600, color: '#22c55e',
                     }}>
                       📍 {profile.checkin_count} gym check-in{profile.checkin_count !== 1 ? 's' : ''}
+                    </div>
+                  )}
+
+                  {/* Badges showcase */}
+                  {userBadges && userBadges.badges?.length > 0 && (
+                    <div style={{ marginTop: 16 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--ts)' }}>
+                          Badges ({userBadges.unlocked_count}/{userBadges.total})
+                        </span>
+                        {isOwn && (
+                          <button onClick={() => nav('/badges')} style={{
+                            background: 'none', border: 'none', cursor: 'pointer',
+                            fontFamily: 'var(--f)', fontSize: 12, fontWeight: 600, color: 'var(--a)',
+                          }}>Visa alla →</button>
+                        )}
+                      </div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                        {userBadges.badges.slice(0, 12).map(b => (
+                          <div key={b.id} title={`${b.name} — ${b.desc}`} style={{
+                            width: 40, height: 40, borderRadius: 10,
+                            background: b.rarity === 'legendary' ? 'rgba(245,158,11,0.12)' :
+                                       b.rarity === 'epic' ? 'rgba(168,85,247,0.12)' :
+                                       b.rarity === 'rare' ? 'rgba(59,130,246,0.12)' :
+                                       b.rarity === 'uncommon' ? 'rgba(34,197,94,0.12)' : 'rgba(156,163,175,0.12)',
+                            border: `1px solid ${
+                              b.rarity === 'legendary' ? 'rgba(245,158,11,0.3)' :
+                              b.rarity === 'epic' ? 'rgba(168,85,247,0.3)' :
+                              b.rarity === 'rare' ? 'rgba(59,130,246,0.3)' :
+                              b.rarity === 'uncommon' ? 'rgba(34,197,94,0.3)' : 'rgba(156,163,175,0.3)'}`,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            fontSize: 20, cursor: 'default',
+                          }}>
+                            {b.icon}
+                          </div>
+                        ))}
+                        {userBadges.badges.length > 12 && (
+                          <div style={{
+                            width: 40, height: 40, borderRadius: 10,
+                            background: 'rgba(255,255,255,0.04)', border: '1px solid var(--br)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            fontSize: 11, fontWeight: 700, color: 'var(--td)',
+                          }}>
+                            +{userBadges.badges.length - 12}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}
 

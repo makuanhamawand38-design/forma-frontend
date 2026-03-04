@@ -144,4 +144,7 @@ export const api = {
   getMyCheckins: () => request('/checkins/me'),
   getGymActive: (gym) => request(`/checkins/gym/${encodeURIComponent(gym)}`),
   getGymLeaderboard: (gym) => request(`/checkins/gym/${encodeURIComponent(gym)}/leaderboard`),
+  // Badges
+  getBadges: () => request('/badges'),
+  getUserBadges: (username) => request(`/badges/${encodeURIComponent(username)}`),
 }
