@@ -38,6 +38,9 @@ export default function Dashboard() {
   const [feedPosts, setFeedPosts] = useState([])
   const [coins, setCoins] = useState(null)
   const [streaks, setStreaks] = useState([])
+  const [checkinData, setCheckinData] = useState(null)
+  const [checkinLoading, setCheckinLoading] = useState(false)
+  const [gymLeaderboard, setGymLeaderboard] = useState(null)
 
   useEffect(() => {
     Promise.all([
@@ -47,13 +50,19 @@ export default function Dashboard() {
       api.getFeed(3, 0).catch(() => ({ posts: [] })),
       api.getCoins(1, 0).catch(() => ({ balance: 0 })),
       api.getStreaks().catch(() => ({ streaks: [] })),
-    ]).then(([p, prof, sug, feed, coinData, streakData]) => {
+      api.getMyCheckins().catch(() => null),
+    ]).then(([p, prof, sug, feed, coinData, streakData, checkins]) => {
       setPrograms(p)
       setProfile(prof)
       setSuggested(sug)
       setFeedPosts(Array.isArray(feed) ? feed.slice(0, 3) : (feed.posts || []).slice(0, 3))
       setCoins(coinData?.balance ?? coinData?.coins ?? 0)
       setStreaks(streakData?.streaks || [])
+      if (checkins) setCheckinData(checkins)
+      // Load gym leaderboard if user has a gym
+      if (prof?.gym) {
+        api.getGymLeaderboard(prof.gym).then(setGymLeaderboard).catch(() => {})
+      }
     }).finally(() => setLoading(false))
   }, [])
 
@@ -77,6 +86,21 @@ export default function Dashboard() {
     } catch (err) {
       alert(err.message)
     }
+  }
+
+  const handleCheckin = async () => {
+    setCheckinLoading(true)
+    try {
+      const res = await api.checkin(profile?.gym || '')
+      setCheckinData({ active: { gym_name: res.gym_name, expires_at: res.expires_at, active_count: res.active_count }, history: checkinData?.history || [], total_checkins: (checkinData?.total_checkins || 0) + 1 })
+      // Refresh coins/XP
+      api.getCoins(1, 0).then(d => setCoins(d?.balance ?? d?.coins ?? 0)).catch(() => {})
+      api.getProfile().then(setProfile).catch(() => {})
+      if (profile?.gym) api.getGymLeaderboard(profile.gym).then(setGymLeaderboard).catch(() => {})
+    } catch (err) {
+      alert(err.message)
+    }
+    setCheckinLoading(false)
   }
 
   const greeting = profile?.username ? `@${profile.username}` : profile?.first_name || ''
@@ -166,6 +190,101 @@ export default function Dashboard() {
 
         {/* XP System */}
         {!loading && <XpBar />}
+
+        {/* Gym Check-in */}
+        {!loading && profile && (
+          <div style={{ marginBottom: 24 }}>
+            {checkinData?.active ? (
+              <div style={{
+                background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.25)',
+                borderRadius: 16, padding: 20, textAlign: 'center',
+              }}>
+                <div style={{ fontSize: 32, marginBottom: 8 }}>📍</div>
+                <div style={{ fontSize: 16, fontWeight: 700, color: '#22c55e', marginBottom: 4 }}>
+                  Du tränar på {checkinData.active.gym_name}
+                </div>
+                <div style={{ fontSize: 13, color: 'var(--ts)', marginBottom: 8 }}>
+                  {checkinData.active.active_count} FORMA-{checkinData.active.active_count === 1 ? 'medlem' : 'medlemmar'} tränar här just nu
+                </div>
+                <div style={{ fontSize: 12, color: 'var(--td)' }}>
+                  Aktiv till {new Date(checkinData.active.expires_at).toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' })}
+                </div>
+              </div>
+            ) : (
+              <button onClick={handleCheckin} disabled={checkinLoading} style={{
+                width: '100%', padding: '20px 24px', borderRadius: 16, border: '2px dashed rgba(255,69,0,0.3)',
+                background: 'rgba(255,69,0,0.05)', cursor: 'pointer', fontFamily: 'var(--f)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12,
+                transition: 'all 0.2s',
+              }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--a)'; e.currentTarget.style.background = 'rgba(255,69,0,0.1)' }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,69,0,0.3)'; e.currentTarget.style.background = 'rgba(255,69,0,0.05)' }}
+              >
+                {checkinLoading ? (
+                  <span className="spinner" style={{ width: 24, height: 24 }} />
+                ) : (
+                  <>
+                    <span style={{ fontSize: 28 }}>📍</span>
+                    <div style={{ textAlign: 'left' }}>
+                      <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--a)' }}>
+                        Checka in på gym
+                      </div>
+                      <div style={{ fontSize: 12, color: 'var(--ts)' }}>
+                        {profile.gym ? profile.gym : 'Ange gym i din profil'} · +5 coins +10 XP
+                      </div>
+                    </div>
+                  </>
+                )}
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Gym Leaderboard */}
+        {!loading && gymLeaderboard && gymLeaderboard.leaderboard?.length > 0 && (
+          <div style={{ marginBottom: 24 }}>
+            <h2 style={{ fontSize: 16, fontWeight: 600, color: 'var(--ts)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 20 }}>🏋️</span> Veckans topp — {gymLeaderboard.gym_name}
+            </h2>
+            <div style={{ background: 'var(--c)', border: '1px solid var(--br)', borderRadius: 14, overflow: 'hidden' }}>
+              {gymLeaderboard.leaderboard.map((u, i) => (
+                <div key={i} onClick={() => u.username && nav(`/user/${u.username}`)} style={{
+                  display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px',
+                  borderBottom: i < gymLeaderboard.leaderboard.length - 1 ? '1px solid var(--br)' : 'none',
+                  cursor: u.username ? 'pointer' : 'default',
+                  background: u.is_you ? 'rgba(255,69,0,0.06)' : 'transparent',
+                  transition: 'background 0.15s',
+                }}
+                  onMouseEnter={e => { if (u.username) e.currentTarget.style.background = u.is_you ? 'rgba(255,69,0,0.1)' : 'var(--s)' }}
+                  onMouseLeave={e => e.currentTarget.style.background = u.is_you ? 'rgba(255,69,0,0.06)' : 'transparent'}
+                >
+                  <div style={{
+                    width: 28, textAlign: 'center', fontSize: u.rank <= 3 ? 18 : 14,
+                    fontWeight: 800, color: u.rank <= 3 ? 'var(--t)' : 'var(--td)',
+                  }}>
+                    {u.rank === 1 ? '🥇' : u.rank === 2 ? '🥈' : u.rank === 3 ? '🥉' : u.rank}
+                  </div>
+                  <div style={{
+                    width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
+                    background: avatarGradient(u.username || ''),
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 13, fontWeight: 700, color: '#fff',
+                  }}>
+                    {u.username?.[0]?.toUpperCase() || '?'}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 14, fontWeight: u.is_you ? 700 : 500, color: u.is_you ? 'var(--a)' : 'var(--t)' }}>
+                      @{u.username} {u.is_you && <span style={{ fontSize: 11, color: 'var(--ts)' }}>(du)</span>}
+                    </div>
+                  </div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: u.rank <= 3 ? 'var(--a)' : 'var(--t)' }}>
+                    {u.xp_gained} <span style={{ fontSize: 11, color: 'var(--td)', fontWeight: 500 }}>XP</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Training Streaks */}
         {!loading && streaks.length > 0 && (

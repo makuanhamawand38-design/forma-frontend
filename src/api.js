@@ -139,4 +139,9 @@ export const api = {
   createChallenge: (data) => request('/challenges', { method: 'POST', body: JSON.stringify(data) }),
   acceptChallenge: (id) => request(`/challenges/${id}/accept`, { method: 'POST' }),
   declineChallenge: (id) => request(`/challenges/${id}/decline`, { method: 'POST' }),
+  // Checkins
+  checkin: (gym_name) => request('/checkins', { method: 'POST', body: JSON.stringify({ gym_name: gym_name || '' }) }),
+  getMyCheckins: () => request('/checkins/me'),
+  getGymActive: (gym) => request(`/checkins/gym/${encodeURIComponent(gym)}`),
+  getGymLeaderboard: (gym) => request(`/checkins/gym/${encodeURIComponent(gym)}/leaderboard`),
 }

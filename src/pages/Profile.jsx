@@ -540,6 +540,22 @@ export default function Profile() {
                 </div>
               )}
 
+              {profile.checkin_count > 0 && (
+                <div className="profile-card" style={{ marginBottom: 24 }}>
+                  <h3 style={{ display: 'flex', alignItems: 'center', gap: 8 }}>📍 Gym Check-ins</h3>
+                  <div style={{
+                    display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px',
+                    borderRadius: 10, background: 'rgba(34,197,94,0.06)', border: '1px solid rgba(34,197,94,0.15)',
+                  }}>
+                    <div style={{ fontSize: 28, fontWeight: 800, color: '#22c55e' }}>{profile.checkin_count}</div>
+                    <div>
+                      <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--t)' }}>Totala check-ins</div>
+                      {profile.gym && <div style={{ fontSize: 12, color: 'var(--td)' }}>{profile.gym}</div>}
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {referralData && (
                 <div className="profile-card" style={{ marginBottom: 24 }}>
                   <h3>Referral-program</h3>

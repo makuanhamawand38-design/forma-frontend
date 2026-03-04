@@ -490,6 +490,18 @@ export default function UserProfile() {
                     </div>
                   )}
 
+                  {/* Check-in badge */}
+                  {profile.checkin_count > 0 && (
+                    <div style={{
+                      display: 'inline-flex', alignItems: 'center', gap: 6,
+                      padding: '5px 14px', borderRadius: 20, marginTop: 16,
+                      background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)',
+                      fontSize: 13, fontWeight: 600, color: '#22c55e',
+                    }}>
+                      📍 {profile.checkin_count} gym check-in{profile.checkin_count !== 1 ? 's' : ''}
+                    </div>
+                  )}
+
                   {/* XP bar */}
                   <div className="up-xp-row">
                     <Zap size={14} />
