@@ -105,6 +105,9 @@ export const api = {
   getUnreadCount: () => request('/dm/conversations/unread-count'),
   getMessages: (conversationId, limit = 50, offset = 0) => request(`/dm/conversations/${conversationId}/messages?limit=${limit}&offset=${offset}`),
   sendMessage: (conversationId, text) => request(`/dm/conversations/${conversationId}/messages`, { method: 'POST', body: JSON.stringify({ text }) }),
+  createGroup: (name, usernames) => request('/dm/groups', { method: 'POST', body: JSON.stringify({ name, usernames }) }),
+  updateGroup: (id, data) => request(`/dm/groups/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  leaveGroup: (id) => request(`/dm/groups/${id}/leave`, { method: 'POST' }),
   // Notifications
   getNotifications: (limit = 30, offset = 0, type = null) => request(`/notifications?limit=${limit}&offset=${offset}${type ? `&notif_type=${type}` : ''}`),
   markNotificationsRead: () => request('/notifications/read-all', { method: 'PUT' }),
