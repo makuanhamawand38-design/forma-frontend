@@ -11,10 +11,8 @@ export function AuthProvider({ children }) {
     const token = localStorage.getItem('forma_token')
     const email = localStorage.getItem('forma_email')
     if (token && email) {
-      setUser({ email, token })
-      // Load full profile (including username) before setting loading=false
       api.getProfile().then(profile => {
-        setUser(prev => ({ ...prev, ...profile }))
+        setUser({ email, token, ...profile })
       }).catch(() => {
         localStorage.removeItem('forma_token')
         localStorage.removeItem('forma_email')
@@ -30,11 +28,8 @@ export function AuthProvider({ children }) {
   const login = async (token, email) => {
     localStorage.setItem('forma_token', token)
     localStorage.setItem('forma_email', email)
-    setUser({ email, token })
-    try {
-      const profile = await api.getProfile()
-      setUser(prev => ({ ...prev, ...profile }))
-    } catch (_) {}
+    const profile = await api.getProfile()
+    setUser({ email, token, ...profile })
   }
 
   const refreshProfile = async () => {
