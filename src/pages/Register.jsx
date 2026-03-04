@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { api } from '../api'
 import { Zap, User } from '../components/Icons'
@@ -28,8 +28,10 @@ export default function Register() {
   const [email, setEmail] = useState('')
   const [pw, setPw] = useState('')
   const [pw2, setPw2] = useState('')
-  const [referralCode, setReferralCode] = useState('')
-  const [showReferral, setShowReferral] = useState(false)
+  const [searchParams] = useSearchParams()
+  const refFromUrl = searchParams.get('ref') || ''
+  const [referralCode, setReferralCode] = useState(refFromUrl.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8))
+  const [showReferral, setShowReferral] = useState(!!refFromUrl)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const debounceRef = useRef(null)

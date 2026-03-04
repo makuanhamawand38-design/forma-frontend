@@ -114,7 +114,7 @@ export default function Pricing() {
             <span style={{ fontSize: 15, color: yearly ? 'var(--t)' : 'var(--ts)', fontWeight: yearly ? 600 : 400 }}>
               Årsvis
             </span>
-            {yearly && <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--suc)', background: 'rgba(34,197,94,0.15)', padding: '4px 10px', borderRadius: 999 }}>Billigare!</span>}
+            {yearly && <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--suc)', background: 'rgba(34,197,94,0.15)', padding: '4px 10px', borderRadius: 999 }}>Spara 25%</span>}
           </div>
 
           {/* Plan cards */}
@@ -123,7 +123,7 @@ export default function Pricing() {
               const isCurrentPlan = currentLevel === plan.key
               const isLowerPlan = levels[plan.key] < levels[currentLevel]
               const displayPrice = yearly && plan.yearlyPrice ? plan.yearlyPrice : plan.price
-              const savingsPercent = yearly && plan.yearlyPrice ? Math.round((1 - plan.yearlyPrice / plan.price) * 100) : 0
+              const savingsPercent = 25
 
               return (
                 <div

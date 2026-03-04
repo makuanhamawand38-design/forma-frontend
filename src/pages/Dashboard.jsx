@@ -35,16 +35,22 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
   const [generating, setGenerating] = useState(null)
   const [suggested, setSuggested] = useState([])
+  const [feedPosts, setFeedPosts] = useState([])
+  const [coins, setCoins] = useState(null)
 
   useEffect(() => {
     Promise.all([
       api.getPrograms().catch(() => []),
       api.getProfile().catch(() => null),
       api.getSuggestedUsers().catch(() => []),
-    ]).then(([p, prof, sug]) => {
+      api.getFeed(3, 0).catch(() => ({ posts: [] })),
+      api.getCoins(1, 0).catch(() => ({ balance: 0 })),
+    ]).then(([p, prof, sug, feed, coinData]) => {
       setPrograms(p)
       setProfile(prof)
       setSuggested(sug)
+      setFeedPosts(Array.isArray(feed) ? feed.slice(0, 3) : (feed.posts || []).slice(0, 3))
+      setCoins(coinData?.balance ?? coinData?.coins ?? 0)
     }).finally(() => setLoading(false))
   }, [])
 
@@ -86,7 +92,7 @@ export default function Dashboard() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16, marginBottom: 32 }}>
           <div>
             <p className="dash-greeting">Hej, {greeting}!</p>
-            <h1 className="dash-title" style={{ margin: 0 }}>Mina Program</h1>
+            <h1 className="dash-title" style={{ margin: 0 }}>Min träning</h1>
           </div>
           <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
             {isPro && (
@@ -108,8 +114,99 @@ export default function Dashboard() {
           </div>
         </div>
 
+        {/* Quick links */}
+        {!loading && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10, marginBottom: 24 }}>
+            {[
+              { label: 'Flöde', icon: '📰', path: '/feed' },
+              { label: 'Logga pass', icon: '💪', path: '/feed' },
+              { label: 'Tävlingar', icon: '🏆', path: '/competitions' },
+              { label: 'Butik', icon: '🛍️', path: '/shop' },
+            ].map(link => (
+              <button key={link.label} onClick={() => nav(link.path)} style={{
+                background: 'var(--b)', border: '1px solid var(--br)', borderRadius: 12,
+                padding: '14px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center',
+                gap: 8, fontFamily: 'var(--f)', fontSize: 14, fontWeight: 600, color: 'var(--t)',
+                transition: 'border-color 0.2s',
+              }}
+                onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--a)'}
+                onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--br)'}
+              >
+                <span style={{ fontSize: 18 }}>{link.icon}</span>
+                {link.label}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Coins, Streak, Level stats row */}
+        {!loading && profile && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: 10, marginBottom: 24 }}>
+            <div style={{ background: 'rgba(255,200,0,0.08)', border: '1px solid rgba(255,200,0,0.2)', borderRadius: 12, padding: 14, textAlign: 'center' }}>
+              <div style={{ fontSize: 24, fontWeight: 800, color: '#fbbf24' }}>{coins ?? 0}</div>
+              <div style={{ fontSize: 11, color: 'var(--ts)', fontWeight: 600 }}>Coins</div>
+            </div>
+            <div style={{ background: 'rgba(255,69,0,0.08)', border: '1px solid rgba(255,69,0,0.2)', borderRadius: 12, padding: 14, textAlign: 'center' }}>
+              <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--a)' }}>{profile.login_streak || 0}</div>
+              <div style={{ fontSize: 11, color: 'var(--ts)', fontWeight: 600 }}>Streak</div>
+            </div>
+            <div style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)', borderRadius: 12, padding: 14, textAlign: 'center' }}>
+              <div style={{ fontSize: 24, fontWeight: 800, color: '#6366f1' }}>{profile.level || 1}</div>
+              <div style={{ fontSize: 11, color: 'var(--ts)', fontWeight: 600 }}>Level</div>
+            </div>
+            <div style={{ background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)', borderRadius: 12, padding: 14, textAlign: 'center' }}>
+              <div style={{ fontSize: 24, fontWeight: 800, color: '#22c55e' }}>{profile.xp || 0}</div>
+              <div style={{ fontSize: 11, color: 'var(--ts)', fontWeight: 600 }}>XP</div>
+            </div>
+          </div>
+        )}
+
         {/* XP System */}
         {!loading && <XpBar />}
+
+        {/* Feed preview */}
+        {!loading && feedPosts.length > 0 && (
+          <div style={{ marginBottom: 24 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <h2 style={{ fontSize: 16, fontWeight: 600, color: 'var(--ts)', margin: 0 }}>Senaste i flödet</h2>
+              <button onClick={() => nav('/feed')} style={{
+                background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'var(--f)',
+                fontSize: 13, fontWeight: 600, color: 'var(--a)',
+              }}>
+                Visa allt →
+              </button>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {feedPosts.map(post => (
+                <div key={post.id} onClick={() => nav(`/post/${post.id}`)} style={{
+                  background: 'var(--b)', border: '1px solid var(--br)', borderRadius: 12,
+                  padding: '12px 16px', cursor: 'pointer', transition: 'border-color 0.2s',
+                }}
+                  onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--a)'}
+                  onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--br)'}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                    <div style={{
+                      width: 24, height: 24, borderRadius: '50%', background: avatarGradient(post.username),
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 11, fontWeight: 700, color: '#fff',
+                    }}>
+                      {post.username?.[0]?.toUpperCase() || '?'}
+                    </div>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--t)' }}>@{post.username}</span>
+                    {post.sport_tag && <span style={{ fontSize: 11, color: 'var(--a)', background: 'rgba(255,69,0,0.1)', padding: '2px 8px', borderRadius: 10, fontWeight: 600 }}>{post.sport_tag}</span>}
+                    <span style={{ fontSize: 11, color: 'var(--td)', marginLeft: 'auto' }}>
+                      {new Date(post.created_at).toLocaleDateString('sv-SE')}
+                    </span>
+                  </div>
+                  <p style={{ fontSize: 13, color: 'var(--ts)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {post.text}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Leaderboard */}
         {!loading && <Leaderboard />}
@@ -148,41 +245,11 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Stats */}
-        {!loading && programs.length > 0 && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12, marginBottom: 32 }}>
-            <div style={{ background: 'var(--b)', border: '1px solid var(--br)', borderRadius: 12, padding: 16, textAlign: 'center' }}>
-              <div style={{ fontSize: 28, fontWeight: 800, color: 'var(--a)' }}>{programs.length}</div>
-              <div style={{ fontSize: 12, color: 'var(--ts)' }}>Totalt program</div>
-            </div>
-            <div style={{ background: 'var(--b)', border: '1px solid var(--br)', borderRadius: 12, padding: 16, textAlign: 'center' }}>
-              <div style={{ fontSize: 28, fontWeight: 800, color: '#22c55e' }}>{activePrograms.length}</div>
-              <div style={{ fontSize: 12, color: 'var(--ts)' }}>Aktiva</div>
-            </div>
-            <div style={{ background: 'var(--b)', border: '1px solid var(--br)', borderRadius: 12, padding: 16, textAlign: 'center' }}>
-              <div style={{ fontSize: 28, fontWeight: 800, color: 'var(--t)' }}>{completedPrograms.length}</div>
-              <div style={{ fontSize: 12, color: 'var(--ts)' }}>Slutförda</div>
-            </div>
-            {profile?.has_discount && (
-              <div style={{ background: 'rgba(255,69,0,0.08)', border: '1px solid rgba(255,69,0,0.2)', borderRadius: 12, padding: 16, textAlign: 'center' }}>
-                <div style={{ fontSize: 28, fontWeight: 800, color: 'var(--a)' }}>20%</div>
-                <div style={{ fontSize: 12, color: 'var(--a)' }}>Rabatt tillgänglig</div>
-              </div>
-            )}
-          </div>
-        )}
-
+        {/* Programs section */}
         {loading ? (
           <div style={{ textAlign: 'center', padding: 48, color: 'var(--ts)' }}><span className="spinner" style={{ width: 32, height: 32 }} /></div>
-        ) : programs.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: 48 }}>
-            <div style={{ fontSize: 48, marginBottom: 16 }}>🏋️</div>
-            <p style={{ color: 'var(--ts)', marginBottom: 24, fontSize: 16 }}>Du har inga program ännu. Köp ett program för att komma igång!</p>
-            <button className="btn-primary" onClick={() => nav('/')}>Se program</button>
-          </div>
-        ) : (
+        ) : programs.length === 0 ? null : (
           <>
-            {/* Pending programs first */}
             {pendingPrograms.length > 0 && (
               <div style={{ marginBottom: 32 }}>
                 <h2 style={{ fontSize: 16, fontWeight: 600, color: 'var(--ts)', marginBottom: 16 }}>Väntar på generering</h2>
@@ -194,7 +261,6 @@ export default function Dashboard() {
               </div>
             )}
 
-            {/* Active programs */}
             {activePrograms.length > 0 && (
               <div style={{ marginBottom: 32 }}>
                 <h2 style={{ fontSize: 16, fontWeight: 600, color: '#22c55e', marginBottom: 16 }}>Aktiva program</h2>
@@ -206,7 +272,6 @@ export default function Dashboard() {
               </div>
             )}
 
-            {/* Completed programs */}
             {completedPrograms.length > 0 && (
               <div style={{ marginBottom: 32 }}>
                 <h2 style={{ fontSize: 16, fontWeight: 600, color: 'var(--ts)', marginBottom: 16 }}>Slutförda program</h2>

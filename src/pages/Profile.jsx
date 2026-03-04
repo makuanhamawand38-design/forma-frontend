@@ -529,22 +529,29 @@ export default function Profile() {
                         onClick={async () => {
                           const code = referralData.referral_code || profile?.referral_code
                           if (!code) return
+                          const fallback = () => {
+                            const ta = document.createElement('textarea')
+                            ta.value = code
+                            ta.style.position = 'fixed'
+                            ta.style.left = '-9999px'
+                            ta.style.opacity = '0'
+                            document.body.appendChild(ta)
+                            ta.focus()
+                            ta.select()
+                            document.execCommand('copy')
+                            document.body.removeChild(ta)
+                          }
                           try {
-                            if (navigator.clipboard && navigator.clipboard.writeText) {
+                            if (navigator.clipboard && window.isSecureContext) {
                               await navigator.clipboard.writeText(code)
                             } else {
-                              const ta = document.createElement('textarea')
-                              ta.value = code
-                              ta.style.position = 'fixed'
-                              ta.style.opacity = '0'
-                              document.body.appendChild(ta)
-                              ta.select()
-                              document.execCommand('copy')
-                              document.body.removeChild(ta)
+                              fallback()
                             }
-                            setCopiedCode(true)
-                            setTimeout(() => setCopiedCode(false), 2000)
-                          } catch {}
+                          } catch {
+                            try { fallback() } catch {}
+                          }
+                          setCopiedCode(true)
+                          setTimeout(() => setCopiedCode(false), 2000)
                         }}
                         style={{
                           padding: '8px 16px', borderRadius: 8, border: 'none', cursor: 'pointer',
@@ -574,22 +581,29 @@ export default function Profile() {
                           const code = referralData.referral_code || profile?.referral_code
                           if (!code) return
                           const url = `https://www.formafitness.se/register?ref=${code}`
+                          const fallback = () => {
+                            const ta = document.createElement('textarea')
+                            ta.value = url
+                            ta.style.position = 'fixed'
+                            ta.style.left = '-9999px'
+                            ta.style.opacity = '0'
+                            document.body.appendChild(ta)
+                            ta.focus()
+                            ta.select()
+                            document.execCommand('copy')
+                            document.body.removeChild(ta)
+                          }
                           try {
-                            if (navigator.clipboard && navigator.clipboard.writeText) {
+                            if (navigator.clipboard && window.isSecureContext) {
                               await navigator.clipboard.writeText(url)
                             } else {
-                              const ta = document.createElement('textarea')
-                              ta.value = url
-                              ta.style.position = 'fixed'
-                              ta.style.opacity = '0'
-                              document.body.appendChild(ta)
-                              ta.select()
-                              document.execCommand('copy')
-                              document.body.removeChild(ta)
+                              fallback()
                             }
-                            setCopiedLink(true)
-                            setTimeout(() => setCopiedLink(false), 2000)
-                          } catch {}
+                          } catch {
+                            try { fallback() } catch {}
+                          }
+                          setCopiedLink(true)
+                          setTimeout(() => setCopiedLink(false), 2000)
                         }}
                         style={{
                           padding: '6px 12px', borderRadius: 6, border: '1px solid var(--br)', cursor: 'pointer',
