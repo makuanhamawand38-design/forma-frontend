@@ -50,6 +50,20 @@ export const api = {
   getCompetition: (id) => request(`/competitions/${id}`),
   createCompetition: (data) => request('/competitions', { method: 'POST', body: JSON.stringify(data) }),
   joinCompetition: (id) => request(`/competitions/${id}/join`, { method: 'POST' }),
+  getCompetitionProgress: (id) => request(`/competitions/${id}/progress`),
+  uploadProgress: async (competitionId, text, imageFile = null, videoFile = null) => {
+    const token = localStorage.getItem('forma_token')
+    const fd = new FormData()
+    fd.append('text', text || '')
+    if (imageFile) fd.append('image', imageFile)
+    if (videoFile) fd.append('video', videoFile)
+    const res = await fetch(`${API}/competitions/${competitionId}/progress`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: fd })
+    const data = await res.json()
+    if (!res.ok) throw new Error(data.detail || 'Något gick fel')
+    return data
+  },
+  voteProgress: (compId, userId) => request(`/competitions/${compId}/vote/${userId}`, { method: 'POST' }),
+  getVotes: (id) => request(`/competitions/${id}/votes`),
   getPublicProfile: (username) => request(`/users/profile/${encodeURIComponent(username)}`),
   checkUsername: (username) => request(`/users/username/check/${encodeURIComponent(username)}`),
   setUsername: (username) => request('/users/me/username', { method: 'PUT', body: JSON.stringify({ username }) }),

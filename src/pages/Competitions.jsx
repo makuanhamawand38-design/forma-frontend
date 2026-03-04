@@ -12,8 +12,8 @@ const LEVEL_COLORS = {
 }
 const RANK_ICONS = { 1: '🥇', 2: '🥈', 3: '🥉' }
 
-const TYPE_LABELS = { xp: 'XP-tävling', streak: 'Streak-tävling', workouts: 'Träningspass' }
-const TYPE_ICONS = { xp: '⚡', streak: '🔥', workouts: '🏋️' }
+const TYPE_LABELS = { xp: 'XP-tävling', streak: 'Streak-tävling', workouts: 'Träningspass', group_challenge: 'Grupptävling' }
+const TYPE_ICONS = { xp: '⚡', streak: '🔥', workouts: '🏋️', group_challenge: '📸' }
 const SCOPE_LABELS = { sweden: 'Sverige', city: 'Stad', gym: 'Gym' }
 
 function timeLeft(endDate) {
@@ -37,6 +37,11 @@ export default function Competitions() {
   const [detailLoading, setDetailLoading] = useState(false)
   const [joining, setJoining] = useState(null)
   const [showCreate, setShowCreate] = useState(false)
+  const [detailTab, setDetailTab] = useState('leaderboard')
+  const [progressPosts, setProgressPosts] = useState([])
+  const [progressLoading, setProgressLoading] = useState(false)
+  const [votes, setVotes] = useState(null)
+  const [showUpload, setShowUpload] = useState(false)
   const [challenges, setChallenges] = useState([])
   const [challengesLoading, setChallengesLoading] = useState(true)
   const [challengeDetail, setChallengeDetail] = useState(null)
@@ -83,11 +88,33 @@ export default function Competitions() {
   const openDetail = async (id) => {
     setSelectedComp(id)
     setDetailLoading(true)
+    setDetailTab('leaderboard')
+    setProgressPosts([])
+    setVotes(null)
     try {
       const data = await api.getCompetition(id)
       setCompDetail(data)
+      if (data.type === 'group_challenge') {
+        setDetailTab('progress')
+        api.getCompetitionProgress(id).then(setProgressPosts).catch(() => {})
+        api.getVotes(id).then(setVotes).catch(() => {})
+      }
     } catch { setCompDetail(null) }
     setDetailLoading(false)
+  }
+
+  const fetchProgress = (id) => {
+    setProgressLoading(true)
+    api.getCompetitionProgress(id).then(setProgressPosts).catch(() => {}).finally(() => setProgressLoading(false))
+  }
+
+  const handleVote = async (targetUserId) => {
+    try {
+      await api.voteProgress(compDetail.id, targetUserId)
+      const v = await api.getVotes(compDetail.id)
+      setVotes(v)
+      setCompDetail(prev => ({ ...prev, has_voted: true }))
+    } catch (e) { alert(e.message) }
   }
 
   const handleJoin = async (id) => {
@@ -360,9 +387,6 @@ export default function Competitions() {
                     {TYPE_LABELS[compDetail.type]}
                   </span>
                   <span style={{ fontSize: 13, padding: '4px 12px', borderRadius: 6, background: 'rgba(255,255,255,0.05)', color: 'var(--ts)' }}>
-                    📍 {SCOPE_LABELS[compDetail.scope]}
-                  </span>
-                  <span style={{ fontSize: 13, padding: '4px 12px', borderRadius: 6, background: 'rgba(255,255,255,0.05)', color: 'var(--ts)' }}>
                     👥 {compDetail.participants_count} deltagare
                   </span>
                   <span style={{
@@ -372,6 +396,11 @@ export default function Competitions() {
                   }}>
                     {compDetail.is_active ? timeLeft(compDetail.end_date) : 'Avslutad'}
                   </span>
+                  {compDetail.group_chat_id && (
+                    <a href="/messages" style={{ fontSize: 13, padding: '4px 12px', borderRadius: 6, background: 'rgba(59,130,246,0.15)', color: '#3b82f6', textDecoration: 'none', fontWeight: 600 }}>
+                      💬 Gruppchatt
+                    </a>
+                  )}
                 </div>
 
                 {compDetail.is_active && !compDetail.is_participant && (
@@ -384,47 +413,183 @@ export default function Competitions() {
                   </button>
                 )}
 
-                {/* Leaderboard */}
-                <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>🏅 Tävlingsställning</h3>
-                {compDetail.leaderboard.length === 0 ? (
-                  <p style={{ color: 'var(--td)', fontSize: 13 }}>Inga deltagare med poäng ännu.</p>
-                ) : (
-                  compDetail.leaderboard.map(u => (
-                    <div key={u.rank} style={{
-                      display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px',
-                      borderRadius: 10, marginBottom: 4,
-                      background: u.is_you ? 'rgba(255,69,0,0.08)' : 'transparent',
-                      border: u.is_you ? '1px solid rgba(255,69,0,0.2)' : '1px solid transparent',
-                    }}>
-                      <div style={{ width: 32, textAlign: 'center', fontSize: u.rank <= 3 ? 20 : 14, fontWeight: 800, color: u.rank <= 3 ? 'var(--t)' : 'var(--td)' }}>
-                        {RANK_ICONS[u.rank] || u.rank}
-                      </div>
-                      <div style={{
-                        width: 28, height: 28, borderRadius: '50%',
-                        background: LEVEL_COLORS[u.level] || '#888',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: 12, fontWeight: 800, color: '#fff', flexShrink: 0,
+                {/* Tabs for group_challenge */}
+                {compDetail.type === 'group_challenge' && (
+                  <div style={{ display: 'flex', gap: 4, marginBottom: 20 }}>
+                    {[{ key: 'progress', label: '📸 Progress' }, { key: 'votes', label: '🗳️ Röstning' }, { key: 'leaderboard', label: '🏅 Ställning' }].map(t => (
+                      <button key={t.key} onClick={() => setDetailTab(t.key)} style={{
+                        flex: 1, padding: '10px 0', borderRadius: 10, border: 'none', cursor: 'pointer',
+                        fontFamily: 'var(--f)', fontSize: 13, fontWeight: detailTab === t.key ? 700 : 500,
+                        background: detailTab === t.key ? 'rgba(255,69,0,0.15)' : 'var(--b)',
+                        color: detailTab === t.key ? 'var(--a)' : 'var(--ts)',
                       }}>
-                        {u.level}
+                        {t.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Progress tab */}
+                {detailTab === 'progress' && compDetail.type === 'group_challenge' && (
+                  <div>
+                    {compDetail.is_participant && compDetail.is_active && (
+                      <button onClick={() => setShowUpload(true)} style={{
+                        width: '100%', padding: '14px 0', borderRadius: 12, border: '2px dashed var(--br)',
+                        background: 'transparent', color: 'var(--a)', fontFamily: 'var(--f)',
+                        fontSize: 14, fontWeight: 700, cursor: 'pointer', marginBottom: 16,
+                        transition: 'border-color 0.2s',
+                      }}
+                        onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--a)'}
+                        onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--br)'}
+                      >
+                        + Ladda upp progress
+                      </button>
+                    )}
+                    {progressPosts.length === 0 ? (
+                      <p style={{ color: 'var(--td)', fontSize: 13, textAlign: 'center', padding: 24 }}>Ingen progress ännu. Var först att ladda upp!</p>
+                    ) : (
+                      <div style={{ display: 'grid', gap: 16 }}>
+                        {progressPosts.map(p => (
+                          <div key={p.id} style={{ background: 'var(--b)', borderRadius: 16, overflow: 'hidden', border: '1px solid var(--br)' }}>
+                            {p.image_url && <img src={p.image_url} alt="" style={{ width: '100%', maxHeight: 400, objectFit: 'cover' }} />}
+                            {p.video_url && <video src={p.video_url} controls style={{ width: '100%', maxHeight: 400 }} />}
+                            <div style={{ padding: 16 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                                <div style={{
+                                  width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
+                                  background: p.avatar_url ? `url(${p.avatar_url}) center/cover` : 'var(--a)',
+                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                  color: '#fff', fontWeight: 700, fontSize: 13,
+                                }}>{!p.avatar_url && (p.username?.[0] || '?').toUpperCase()}</div>
+                                <div>
+                                  <span style={{ fontWeight: 600, fontSize: 14 }}>@{p.username}</span>
+                                  <div style={{ fontSize: 11, color: 'var(--td)' }}>{new Date(p.created_at).toLocaleDateString('sv-SE', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</div>
+                                </div>
+                              </div>
+                              {p.text && <p style={{ fontSize: 14, color: 'var(--t)', margin: 0 }}>{p.text}</p>}
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 14, fontWeight: u.is_you ? 700 : 500, color: u.is_you ? 'var(--a)' : 'var(--t)' }}>
-                          {u.name} {u.is_you && <span style={{ fontSize: 11, color: 'var(--ts)' }}>(du)</span>}
+                    )}
+                  </div>
+                )}
+
+                {/* Votes tab */}
+                {detailTab === 'votes' && compDetail.type === 'group_challenge' && (
+                  <div>
+                    {!compDetail.has_voted && compDetail.is_participant ? (
+                      <div>
+                        <p style={{ fontSize: 14, color: 'var(--ts)', marginBottom: 16 }}>Rösta på vem som hade bäst förvandling/progress:</p>
+                        {progressPosts.length === 0 ? (
+                          <p style={{ color: 'var(--td)', fontSize: 13, textAlign: 'center' }}>Ingen progress att rösta på ännu.</p>
+                        ) : (
+                          /* Show unique participants who posted progress */
+                          [...new Map(progressPosts.map(p => [p.user_id, p])).values()]
+                            .filter(p => p.user_id !== user?.id)
+                            .map(p => (
+                              <div key={p.user_id} style={{
+                                display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px',
+                                background: 'var(--b)', borderRadius: 12, marginBottom: 8,
+                                border: '1px solid var(--br)',
+                              }}>
+                                <div style={{
+                                  width: 36, height: 36, borderRadius: '50%', flexShrink: 0,
+                                  background: p.avatar_url ? `url(${p.avatar_url}) center/cover` : 'var(--a)',
+                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                  color: '#fff', fontWeight: 700, fontSize: 14,
+                                }}>{!p.avatar_url && (p.username?.[0] || '?').toUpperCase()}</div>
+                                <span style={{ flex: 1, fontWeight: 600, fontSize: 14 }}>@{p.username}</span>
+                                <button onClick={() => handleVote(p.user_id)} style={{
+                                  background: 'var(--a)', color: '#fff', border: 'none', borderRadius: 999,
+                                  padding: '8px 20px', fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                                }}>Rösta</button>
+                              </div>
+                            ))
+                        )}
+                      </div>
+                    ) : (
+                      <div>
+                        <p style={{ fontSize: 14, color: 'var(--ts)', marginBottom: 16 }}>
+                          {votes ? `${votes.total_votes} av ${votes.total_participants} har röstat` : 'Laddar...'}
+                        </p>
+                        {votes && votes.results.length > 0 ? votes.results.map((v, i) => (
+                          <div key={v.user_id} style={{
+                            display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px',
+                            background: i === 0 ? 'rgba(255,69,0,0.08)' : 'var(--b)', borderRadius: 12, marginBottom: 8,
+                            border: i === 0 ? '1px solid rgba(255,69,0,0.2)' : '1px solid var(--br)',
+                          }}>
+                            <div style={{ width: 28, textAlign: 'center', fontSize: i === 0 ? 20 : 14, fontWeight: 800 }}>
+                              {i === 0 ? '🏆' : i + 1}
+                            </div>
+                            <div style={{
+                              width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
+                              background: v.avatar_url ? `url(${v.avatar_url}) center/cover` : 'var(--a)',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              color: '#fff', fontWeight: 700, fontSize: 13,
+                            }}>{!v.avatar_url && (v.username?.[0] || '?').toUpperCase()}</div>
+                            <span style={{ flex: 1, fontWeight: 600, fontSize: 14 }}>@{v.username}</span>
+                            <span style={{ fontWeight: 800, fontSize: 16, color: i === 0 ? 'var(--a)' : 'var(--t)' }}>{v.vote_count}</span>
+                            <span style={{ fontSize: 12, color: 'var(--td)' }}>röster</span>
+                          </div>
+                        )) : votes && <p style={{ color: 'var(--td)', fontSize: 13, textAlign: 'center' }}>Inga röster ännu.</p>}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Leaderboard (shown for non-group_challenge, or when tab selected) */}
+                {(detailTab === 'leaderboard' || compDetail.type !== 'group_challenge') && (
+                  <>
+                    {compDetail.type !== 'group_challenge' && <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>🏅 Tävlingsställning</h3>}
+                    {compDetail.leaderboard.length === 0 ? (
+                      <p style={{ color: 'var(--td)', fontSize: 13 }}>Inga deltagare med poäng ännu.</p>
+                    ) : (
+                      compDetail.leaderboard.map(u => (
+                        <div key={u.rank} style={{
+                          display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px',
+                          borderRadius: 10, marginBottom: 4,
+                          background: u.is_you ? 'rgba(255,69,0,0.08)' : 'transparent',
+                          border: u.is_you ? '1px solid rgba(255,69,0,0.2)' : '1px solid transparent',
+                        }}>
+                          <div style={{ width: 32, textAlign: 'center', fontSize: u.rank <= 3 ? 20 : 14, fontWeight: 800, color: u.rank <= 3 ? 'var(--t)' : 'var(--td)' }}>
+                            {RANK_ICONS[u.rank] || u.rank}
+                          </div>
+                          <div style={{
+                            width: 28, height: 28, borderRadius: '50%',
+                            background: LEVEL_COLORS[u.level] || '#888',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            fontSize: 12, fontWeight: 800, color: '#fff', flexShrink: 0,
+                          }}>
+                            {u.level}
+                          </div>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontSize: 14, fontWeight: u.is_you ? 700 : 500, color: u.is_you ? 'var(--a)' : 'var(--t)' }}>
+                              {u.name} {u.is_you && <span style={{ fontSize: 11, color: 'var(--ts)' }}>(du)</span>}
+                            </div>
+                            <div style={{ fontSize: 11, color: 'var(--td)' }}>{u.level_name}</div>
+                          </div>
+                          <div style={{ textAlign: 'right' }}>
+                            <div style={{ fontSize: 14, fontWeight: 700, color: u.rank <= 3 ? 'var(--a)' : 'var(--t)' }}>{u.xp.toLocaleString()}</div>
+                            <div style={{ fontSize: 11, color: 'var(--td)' }}>XP</div>
+                          </div>
                         </div>
-                        <div style={{ fontSize: 11, color: 'var(--td)' }}>{u.level_name}</div>
-                      </div>
-                      <div style={{ textAlign: 'right' }}>
-                        <div style={{ fontSize: 14, fontWeight: 700, color: u.rank <= 3 ? 'var(--a)' : 'var(--t)' }}>{u.xp.toLocaleString()}</div>
-                        <div style={{ fontSize: 11, color: 'var(--td)' }}>XP</div>
-                      </div>
-                    </div>
-                  ))
+                      ))
+                    )}
+                  </>
                 )}
               </>
             )}
           </div>
         </div>
       )}
+
+      {/* Upload progress modal */}
+      {showUpload && compDetail && <UploadProgressModal
+        competitionId={compDetail.id}
+        onClose={() => setShowUpload(false)}
+        onUploaded={() => { setShowUpload(false); fetchProgress(compDetail.id) }}
+      />}
 
       {/* Create competition modal */}
       {showCreate && <CreateCompetitionModal onClose={() => setShowCreate(false)} onCreated={() => { setShowCreate(false); fetchList(tab) }} />}
@@ -470,16 +635,18 @@ function CreateCompetitionModal({ onClose, onCreated }) {
 
   const removeInvite = (username) => setInvitedUsers(invitedUsers.filter(u => u !== username))
 
+  const effectiveVisibility = type === 'group_challenge' ? 'private' : visibility
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!title.trim()) { setError('Titel krävs'); return }
-    if (visibility === 'private' && invitedUsers.length === 0) { setError('Bjud in minst en person till en privat tävling'); return }
+    if (effectiveVisibility === 'private' && invitedUsers.length === 0) { setError('Bjud in minst en person'); return }
     setLoading(true)
     setError('')
     try {
       await api.createCompetition({
         title: title.trim(), description: description.trim(), type, scope,
-        duration_days: duration, visibility, invited_users: visibility === 'private' ? invitedUsers : [],
+        duration_days: duration, visibility: effectiveVisibility, invited_users: effectiveVisibility === 'private' ? invitedUsers : [],
       })
       onCreated()
     } catch (err) { setError(err.message); setLoading(false) }
@@ -549,23 +716,30 @@ function CreateCompetitionModal({ onClose, onCreated }) {
             </div>
           </div>
 
-          <div style={{ marginBottom: 16 }}>
-            <label style={{ fontSize: 13, color: 'var(--ts)', display: 'block', marginBottom: 6 }}>Synlighet</label>
-            <div style={{ display: 'flex', gap: 8 }}>
-              {[['public', 'Publik'], ['private', 'Privat']].map(([k, v]) => (
-                <button key={k} type="button" onClick={() => setVisibility(k)} style={{
-                  flex: 1, padding: '10px 0', borderRadius: 10, border: 'none', cursor: 'pointer',
-                  fontFamily: 'var(--f)', fontSize: 13, fontWeight: visibility === k ? 700 : 500,
-                  background: visibility === k ? 'rgba(255,69,0,0.15)' : 'var(--b)',
-                  color: visibility === k ? 'var(--a)' : 'var(--ts)',
-                }}>
-                  {k === 'private' ? '🔒 ' : '🌐 '}{v}
-                </button>
-              ))}
+          {type !== 'group_challenge' && (
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ fontSize: 13, color: 'var(--ts)', display: 'block', marginBottom: 6 }}>Synlighet</label>
+              <div style={{ display: 'flex', gap: 8 }}>
+                {[['public', 'Publik'], ['private', 'Privat']].map(([k, v]) => (
+                  <button key={k} type="button" onClick={() => setVisibility(k)} style={{
+                    flex: 1, padding: '10px 0', borderRadius: 10, border: 'none', cursor: 'pointer',
+                    fontFamily: 'var(--f)', fontSize: 13, fontWeight: visibility === k ? 700 : 500,
+                    background: visibility === k ? 'rgba(255,69,0,0.15)' : 'var(--b)',
+                    color: visibility === k ? 'var(--a)' : 'var(--ts)',
+                  }}>
+                    {k === 'private' ? '🔒 ' : '🌐 '}{v}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
+          {type === 'group_challenge' && (
+            <div style={{ marginBottom: 16, padding: '10px 14px', borderRadius: 10, background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.2)' }}>
+              <p style={{ fontSize: 13, color: '#3b82f6', margin: 0 }}>Grupptävlingar är alltid privata. En gruppchatt skapas automatiskt.</p>
+            </div>
+          )}
 
-          {visibility === 'private' && (
+          {effectiveVisibility === 'private' && (
             <div style={{ marginBottom: 16 }}>
               <label style={{ fontSize: 13, color: 'var(--ts)', display: 'block', marginBottom: 6 }}>Bjud in användare</label>
               <div style={{ position: 'relative' }}>
@@ -630,6 +804,106 @@ function CreateCompetitionModal({ onClose, onCreated }) {
 
           <button type="submit" disabled={loading} className="auth-btn">
             {loading ? <span className="spinner" /> : 'Skapa tävling'}
+          </button>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+function UploadProgressModal({ competitionId, onClose, onUploaded }) {
+  const [text, setText] = useState('')
+  const [imageFile, setImageFile] = useState(null)
+  const [videoFile, setVideoFile] = useState(null)
+  const [preview, setPreview] = useState(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  const handleFile = (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+    if (file.type.startsWith('image/')) {
+      setImageFile(file)
+      setVideoFile(null)
+      setPreview(URL.createObjectURL(file))
+    } else if (file.type.startsWith('video/')) {
+      setVideoFile(file)
+      setImageFile(null)
+      setPreview(URL.createObjectURL(file))
+    } else {
+      setError('Ogiltigt filformat')
+    }
+  }
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    if (!text.trim() && !imageFile && !videoFile) { setError('Lägg till text, bild eller video'); return }
+    setLoading(true)
+    setError('')
+    try {
+      await api.uploadProgress(competitionId, text, imageFile, videoFile)
+      onUploaded()
+    } catch (err) { setError(err.message); setLoading(false) }
+  }
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 10000,
+      background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+    }} onClick={onClose}>
+      <div style={{
+        background: 'var(--c)', border: '1px solid var(--br)', borderRadius: 24,
+        padding: 32, maxWidth: 460, width: '90%', maxHeight: '85vh', overflowY: 'auto',
+      }} onClick={e => e.stopPropagation()}>
+        <button onClick={onClose} style={{
+          float: 'right', background: 'none', border: 'none', color: 'var(--ts)',
+          fontSize: 24, cursor: 'pointer', lineHeight: 1,
+        }}>&times;</button>
+
+        <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 24 }}>Ladda upp progress</h2>
+
+        {error && <div className="auth-error">{error}</div>}
+
+        <form onSubmit={handleSubmit}>
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ fontSize: 13, color: 'var(--ts)', display: 'block', marginBottom: 6 }}>Bild eller video</label>
+            <label style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              padding: preview ? 0 : 40, borderRadius: 16, cursor: 'pointer',
+              border: '2px dashed var(--br)', background: 'var(--b)', overflow: 'hidden',
+              transition: 'border-color 0.2s', position: 'relative',
+            }}
+              onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--a)'}
+              onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--br)'}
+            >
+              <input type="file" accept="image/*,video/mp4,video/quicktime" onChange={handleFile} style={{ display: 'none' }} />
+              {preview ? (
+                imageFile ? <img src={preview} alt="" style={{ width: '100%', maxHeight: 300, objectFit: 'cover' }} />
+                  : <video src={preview} controls style={{ width: '100%', maxHeight: 300 }} />
+              ) : (
+                <div style={{ textAlign: 'center', color: 'var(--td)' }}>
+                  <div style={{ fontSize: 32, marginBottom: 8 }}>📷</div>
+                  <div style={{ fontSize: 13 }}>Klicka för att välja bild/video</div>
+                </div>
+              )}
+            </label>
+            {preview && (
+              <button type="button" onClick={() => { setImageFile(null); setVideoFile(null); setPreview(null) }} style={{
+                marginTop: 8, background: 'none', border: 'none', color: '#ef4444',
+                fontSize: 13, cursor: 'pointer', fontFamily: 'var(--f)',
+              }}>Ta bort media</button>
+            )}
+          </div>
+
+          <div style={{ marginBottom: 24 }}>
+            <label style={{ fontSize: 13, color: 'var(--ts)', display: 'block', marginBottom: 6 }}>Text (valfritt)</label>
+            <textarea value={text} onChange={e => setText(e.target.value)} placeholder="Beskriv din progress..."
+              rows={3} className="auth-input" style={{ width: '100%', resize: 'vertical', fontFamily: 'var(--f)' }} />
+          </div>
+
+          <button type="submit" disabled={loading} className="auth-btn">
+            {loading ? <span className="spinner" /> : 'Ladda upp'}
           </button>
         </form>
       </div>
@@ -749,7 +1023,7 @@ function CreateChallengeModal({ onClose, onCreated, defaultUser }) {
           <div style={{ marginBottom: 16 }}>
             <label style={{ fontSize: 13, color: 'var(--ts)', display: 'block', marginBottom: 6 }}>Typ av utmaning</label>
             <div style={{ display: 'flex', gap: 8 }}>
-              {Object.entries(TYPE_LABELS).map(([k, v]) => (
+              {Object.entries(TYPE_LABELS).filter(([k]) => k !== 'group_challenge').map(([k, v]) => (
                 <button key={k} type="button" onClick={() => setType(k)} style={{
                   flex: 1, padding: '10px 0', borderRadius: 10, border: 'none', cursor: 'pointer',
                   fontFamily: 'var(--f)', fontSize: 13, fontWeight: type === k ? 700 : 500,
