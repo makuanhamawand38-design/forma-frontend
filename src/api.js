@@ -151,4 +151,13 @@ export const api = {
   // Badges
   getBadges: () => request('/badges'),
   getUserBadges: (username) => request(`/badges/${encodeURIComponent(username)}`),
+  // Workouts
+  createWorkout: (data) => request('/workouts', { method: 'POST', body: JSON.stringify(data) }),
+  getWorkouts: (limit = 20, offset = 0) => request(`/workouts?limit=${limit}&offset=${offset}`),
+  getWorkout: (id) => request(`/workouts/${id}`),
+  updateWorkout: (id, data) => request(`/workouts/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteWorkout: (id) => request(`/workouts/${id}`, { method: 'DELETE' }),
+  getWorkoutStats: () => request('/workouts/stats'),
+  getWorkoutPRs: (limit = 30) => request(`/workouts/prs?limit=${limit}`),
+  getExerciseHistory: (name, limit = 20) => request(`/workouts/exercise/${encodeURIComponent(name)}/history?limit=${limit}`),
 }

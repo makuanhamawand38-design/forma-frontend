@@ -146,7 +146,7 @@ export default function Dashboard() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10, marginBottom: 24 }}>
             {[
               { label: 'Flöde', icon: '📰', path: '/feed' },
-              { label: 'Logga pass', icon: '💪', path: '/feed' },
+              { label: 'Logga pass', icon: '💪', path: '/log' },
               { label: 'Tävlingar', icon: '🏆', path: '/competitions' },
               { label: 'Badges', icon: '🏅', path: '/badges' },
               { label: 'Butik', icon: '🛍️', path: '/shop' },

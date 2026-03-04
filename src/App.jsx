@@ -23,6 +23,7 @@ import FindPartner from './pages/FindPartner'
 import Guidelines from './pages/Guidelines'
 import Shop from './pages/Shop'
 import Badges from './pages/Badges'
+import WorkoutLog from './pages/WorkoutLog'
 import CookieConsent from './components/CookieConsent'
 
 function ProtectedRoute({ children }) {
@@ -63,6 +64,7 @@ export default function App() {
       <Route path="/find-partner" element={<ProtectedRoute><FindPartner /></ProtectedRoute>} />
       <Route path="/shop" element={<ProtectedRoute><Shop /></ProtectedRoute>} />
       <Route path="/badges" element={<ProtectedRoute><Badges /></ProtectedRoute>} />
+      <Route path="/log" element={<ProtectedRoute><WorkoutLog /></ProtectedRoute>} />
       <Route path="/guidelines" element={<Guidelines />} />
       <Route path="/villkor" element={<Terms />} />
       <Route path="*" element={<NotFound />} />
