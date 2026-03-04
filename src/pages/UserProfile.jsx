@@ -102,6 +102,7 @@ export default function UserProfile() {
   const [streakData, setStreakData] = useState(null)
   const [streakLoading, setStreakLoading] = useState(false)
   const [userBadges, setUserBadges] = useState(null)
+  const [userGoals, setUserGoals] = useState([])
   const avatarRef = useRef(null)
   const coverRef = useRef(null)
 
@@ -114,7 +115,9 @@ export default function UserProfile() {
     setFollowStatus(null)
     setStreakData(null)
     setUserBadges(null)
+    setUserGoals([])
     api.getUserBadges(username).then(setUserBadges).catch(() => {})
+    api.getUserGoals(username).then(d => setUserGoals(d.goals || [])).catch(() => {})
     api.getPublicProfile(username)
       .then(p => {
         setProfile(p)
@@ -548,6 +551,41 @@ export default function UserProfile() {
                             +{userBadges.badges.length - 12}
                           </div>
                         )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Active goals */}
+                  {userGoals.length > 0 && (
+                    <div style={{ marginTop: 16 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--ts)' }}>
+                          Aktiva mål ({userGoals.length})
+                        </span>
+                        {isOwn && (
+                          <button onClick={() => nav('/goals')} style={{
+                            background: 'none', border: 'none', cursor: 'pointer',
+                            fontFamily: 'var(--f)', fontSize: 12, fontWeight: 600, color: 'var(--a)',
+                          }}>Visa alla →</button>
+                        )}
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        {userGoals.slice(0, 3).map(g => (
+                          <div key={g.id} style={{
+                            background: 'var(--b)', border: '1px solid var(--br)', borderRadius: 10,
+                            padding: '10px 14px',
+                          }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--t)' }}>
+                                {g.type === 'weight' ? '⚖️' : g.type === 'strength' ? '💪' : g.type === 'streak' ? '🔥' : g.type === 'cardio' ? '🏃' : '🎯'} {g.title}
+                              </span>
+                              <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--a)' }}>{g.progress}%</span>
+                            </div>
+                            <div style={{ width: '100%', height: 6, borderRadius: 3, background: 'var(--c)', overflow: 'hidden' }}>
+                              <div style={{ width: `${Math.min(100, g.progress)}%`, height: '100%', borderRadius: 3, background: 'var(--a)', transition: 'width 0.4s' }} />
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   )}

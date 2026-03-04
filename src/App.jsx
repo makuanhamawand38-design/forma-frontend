@@ -24,6 +24,7 @@ import Guidelines from './pages/Guidelines'
 import Shop from './pages/Shop'
 import Badges from './pages/Badges'
 import WorkoutLog from './pages/WorkoutLog'
+import Goals from './pages/Goals'
 import CookieConsent from './components/CookieConsent'
 
 function ProtectedRoute({ children }) {
@@ -65,6 +66,7 @@ export default function App() {
       <Route path="/shop" element={<ProtectedRoute><Shop /></ProtectedRoute>} />
       <Route path="/badges" element={<ProtectedRoute><Badges /></ProtectedRoute>} />
       <Route path="/log" element={<ProtectedRoute><WorkoutLog /></ProtectedRoute>} />
+      <Route path="/goals" element={<ProtectedRoute><Goals /></ProtectedRoute>} />
       <Route path="/guidelines" element={<Guidelines />} />
       <Route path="/villkor" element={<Terms />} />
       <Route path="*" element={<NotFound />} />

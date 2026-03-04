@@ -147,6 +147,7 @@ export default function Dashboard() {
             {[
               { label: 'Flöde', icon: '📰', path: '/feed' },
               { label: 'Logga pass', icon: '💪', path: '/log' },
+              { label: 'Mål', icon: '🎯', path: '/goals' },
               { label: 'Tävlingar', icon: '🏆', path: '/competitions' },
               { label: 'Badges', icon: '🏅', path: '/badges' },
               { label: 'Butik', icon: '🛍️', path: '/shop' },

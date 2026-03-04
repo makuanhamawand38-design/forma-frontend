@@ -52,11 +52,13 @@ export default function Profile() {
   const [showBlocked, setShowBlocked] = useState(false)
   const [streaks, setStreaks] = useState([])
   const [badgeData, setBadgeData] = useState(null)
+  const [myGoals, setMyGoals] = useState([])
   const nav = useNavigate()
 
   useEffect(() => {
     api.getStreaks().then(d => setStreaks(d.streaks || [])).catch(() => {})
     api.getBadges().then(setBadgeData).catch(() => {})
+    api.getGoals('active').then(d => setMyGoals(d.goals || [])).catch(() => {})
     api.getProfile().then(p => {
       setProfile(p)
       setFirstName(p.first_name || '')
@@ -589,6 +591,42 @@ export default function Profile() {
                         fontSize: 18, cursor: 'default',
                       }}>
                         {b.icon}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {myGoals.length > 0 && (
+                <div className="profile-card" style={{ marginBottom: 24 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                    <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>🎯 Aktiva mål</h3>
+                    <button onClick={() => nav('/goals')} style={{
+                      background: 'none', border: 'none', cursor: 'pointer',
+                      fontFamily: 'var(--f)', fontSize: 13, fontWeight: 600, color: 'var(--a)',
+                    }}>Visa alla →</button>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {myGoals.slice(0, 3).map(g => (
+                      <div key={g.id} onClick={() => nav('/goals')} style={{
+                        background: 'var(--b)', border: '1px solid var(--br)', borderRadius: 10,
+                        padding: '10px 14px', cursor: 'pointer', transition: 'border-color 0.2s',
+                      }}
+                        onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--a)'}
+                        onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--br)'}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                          <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--t)' }}>
+                            {g.type === 'weight' ? '⚖️' : g.type === 'strength' ? '💪' : g.type === 'streak' ? '🔥' : g.type === 'cardio' ? '🏃' : '🎯'} {g.title}
+                          </span>
+                          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--a)' }}>{g.progress}%</span>
+                        </div>
+                        <div style={{ width: '100%', height: 6, borderRadius: 3, background: 'var(--c)', overflow: 'hidden' }}>
+                          <div style={{ width: `${Math.min(100, g.progress)}%`, height: '100%', borderRadius: 3, background: g.progress >= 100 ? '#22c55e' : 'var(--a)', transition: 'width 0.4s' }} />
+                        </div>
+                        <div style={{ fontSize: 11, color: 'var(--td)', marginTop: 4 }}>
+                          {g.current_value} / {g.target_value} {g.unit}
+                        </div>
                       </div>
                     ))}
                   </div>

@@ -160,4 +160,11 @@ export const api = {
   getWorkoutStats: () => request('/workouts/stats'),
   getWorkoutPRs: (limit = 30) => request(`/workouts/prs?limit=${limit}`),
   getExerciseHistory: (name, limit = 20) => request(`/workouts/exercise/${encodeURIComponent(name)}/history?limit=${limit}`),
+  // Goals
+  createGoal: (data) => request('/goals', { method: 'POST', body: JSON.stringify(data) }),
+  getGoals: (status = 'all') => request(`/goals?status=${status}`),
+  updateGoal: (id, data) => request(`/goals/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteGoal: (id) => request(`/goals/${id}`, { method: 'DELETE' }),
+  completeGoal: (id, auto_post = false) => request(`/goals/${id}/complete`, { method: 'POST', body: JSON.stringify({ auto_post }) }),
+  getUserGoals: (username) => request(`/goals/public/${encodeURIComponent(username)}`),
 }
